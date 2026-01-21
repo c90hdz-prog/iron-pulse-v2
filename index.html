@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0B0B0F" />
+    <title>Iron Pulse V2</title>
+
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="stylesheet" href="./src/styles.css" />
+  </head>
+
+  <body>
+    <div id="app">
+      <!-- Sticky Header -->
+      <header class="header">
+        <div class="brand">
+          <div class="logo" aria-hidden="true"></div>
+          <div class="brandText">
+            <div class="brandTitle">Iron Pulse</div>
+            <div class="brandSub">V2 (clean build)</div>
+          </div>
+        </div>
+        <button class="iconBtn" id="btnSettings" aria-label="Settings">
+          ⚙️
+        </button>
+      </header>
+
+      <!-- Main -->
+      <main class="main">
+        <section id="streakBanner" class="card"></section>
+
+        <section id="goalCard" class="card"></section>
+
+        <section class="grid">
+          <div id="weeklyVolume" class="card"></div>
+          <div id="todaysSplit" class="card"></div>
+        </section>
+
+        <section id="afterburn" class="card"></section>
+      </main>
+
+      <!-- Sticky CTA -->
+      <footer class="footer">
+        <button class="cta" id="btnCTA">Start Today</button>
+      </footer>
+    </div>
+
+    <!-- Modal Root -->
+    <div id="modalRoot"></div>
+    <div id="toastRoot"></div>
+
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>
