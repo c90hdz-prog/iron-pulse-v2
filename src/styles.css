@@ -164,6 +164,12 @@ body {
     box-shadow: 0 16px 44px rgba(255, 92, 119, 0.22);
 }
 
+body.noScroll {
+    overflow: hidden;
+    touch-action: none;
+    /* helps on mobile */
+}
+
 /* Modal */
 .modalOverlay {
     position: fixed;

@@ -1,7 +1,16 @@
 export function renderModalRoot(root, modalHtml, onClose) {
   root.innerHTML = "";
 
-  if (!modalHtml) return;
+  const setLocked = (locked) => {
+    document.body.classList.toggle("noScroll", locked);
+  };
+
+  if (!modalHtml) {
+    setLocked(false);
+    return;
+  }
+
+  setLocked(true);
 
   const overlay = document.createElement("div");
   overlay.className = "modalOverlay";
