@@ -1,3 +1,5 @@
+
+
 :root {
     --bg: #0b0b0f;
     --panel: rgba(255, 255, 255, 0.06);
@@ -174,24 +176,78 @@ body.noScroll {
 .modalOverlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.62);
-    backdrop-filter: blur(10px);
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(6px);
     display: flex;
     align-items: flex-end;
+    /* mobile sheet feel */
     justify-content: center;
-    padding: 16px;
-    z-index: 50;
+    z-index: 1000;
 }
 
 .modal {
-    width: min(720px, 100%);
-    border-radius: 22px;
-    border: 1px solid var(--line);
-    background: rgba(15, 15, 22, 0.92);
-    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
+    width: calc(100% - 24px);
+    max-width: 420px;
+    margin-bottom: env(safe-area-inset-bottom);
+    border-radius: 16px;
+    max-height: 85vh;
+
+    display: flex;
+    flex-direction: column;
+
     overflow: hidden;
+    /* stops inner bleed */
+
+    /* readability + premium feel */
+    background: rgba(18, 18, 22, 0.96);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 18px 60px rgba(0, 0, 0, 0.55);
 }
 
+.modalBody {
+    flex: 1;
+    padding: 16px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    /* kill sideways scroll */
+}
+
+.modal .row,
+.modal .grid {
+    min-width: 0;
+    /* CRITICAL for flex children */
+}
+
+.modal input,
+.modal button {
+    max-width: 100%;
+}
+
+.fieldRow {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+@media (max-width: 360px) {
+    .fieldRow {
+        grid-template-columns: 1fr;
+    }
+}
+.field+.fieldRow {
+    margin-top: 10px;
+}
+
+/* FieldRow overflow fix (grid children can overflow without this) */
+.fieldRow>.field {
+    min-width: 0;
+}
+
+/* Make inputs obey their column width */
+.fieldRow input {
+    width: 100%;
+    min-width: 0;
+}
 .modalHeader {
     display: flex;
     align-items: center;
@@ -204,15 +260,10 @@ body.noScroll {
     font-weight: 800;
 }
 
-.modalBody {
-    padding: 14px;
-    display: grid;
-    gap: 10px;
-}
-
 .field {
     display: grid;
     gap: 6px;
+    min-width: 0;
 }
 
 label {
@@ -272,10 +323,7 @@ input {
     box-shadow: var(--shadow);
     font-weight: 650;
 }
-button:disabled {
-    opacity: 0.55;
-    cursor: not-allowed;
-}
+
 /* Micro reward pulse */
 .pulseWin {
     animation: pulseWin 650ms ease-out;
@@ -307,3 +355,34 @@ button:disabled {
     background: rgba(255, 255, 255, 0.22);
     color: #fff;
 }
+
+/* Volume bar */
+.barWrap {
+    margin-top: 12px;
+    border: 1px solid var(--line);
+    background: rgba(0, 0, 0, 0.18);
+    border-radius: 999px;
+    height: 14px;
+    overflow: hidden;
+}
+
+.barFill {
+    height: 100%;
+    width: 0%;
+    border-radius: 999px;
+    background: linear-gradient(135deg, var(--cta), var(--cta2));
+    transition: width 320ms ease;
+}
+
+.barMeta {
+    margin-top: 8px;
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+
+
+

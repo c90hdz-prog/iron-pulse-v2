@@ -15,16 +15,17 @@ export function loggingModalHtml(payload = {}) {
           <input id="inExercise" placeholder="Bench Press" value="${escapeHtml(exercise)}"/>
         </div>
 
-        <div class="row" style="gap:10px;">
-          <div class="field" style="flex:1;">
-            <label>Reps</label>
-            <input id="inReps" inputmode="numeric" placeholder="8" />
-          </div>
-          <div class="field" style="flex:1;">
-            <label>Weight</label>
-            <input id="inWeight" inputmode="numeric" placeholder="135" />
-          </div>
+      <div class="fieldRow" style="margin-top:10px;">
+        <div class="field">
+          <label>Reps</label>
+          <input id="inReps" inputmode="numeric" placeholder="8" />
         </div>
+        <div class="field">
+          <label>Weight</label>
+          <input id="inWeight" inputmode="numeric" placeholder="135" />
+        </div>
+      </div>
+
 
         <div class="card" style="padding:12px; margin-top:4px;">
           <div class="row">
