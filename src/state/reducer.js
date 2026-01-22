@@ -1,13 +1,15 @@
-import { OPEN_MODAL, CLOSE_MODAL, ADD_SET, SET_WEEKLY_GOAL, RESET_WEEK } from "./actions.js";
+import { getWeekId } from "./time.js";
 
-const getWeekId = (d = new Date()) => {
-  // Simple week id: YYYY-WW (not ISO-perfect, but consistent for now)
-  const year = d.getFullYear();
-  const jan1 = new Date(year, 0, 1);
-  const days = Math.floor((d - jan1) / 86400000);
-  const week = Math.floor((days + jan1.getDay()) / 7) + 1;
-  return `${year}-W${String(week).padStart(2, "0")}`;
-};
+import {
+  OPEN_MODAL,
+  CLOSE_MODAL,
+  ADD_SET,
+  SET_WEEKLY_GOAL,
+  RESET_WEEK,
+  COMPLETE_SESSION,
+  ENSURE_CURRENT_WEEK
+} from "./actions.js";
+
 
 export const initialState = {
   ui: {
@@ -46,6 +48,65 @@ export function reducer(state, action) {
         ...state,
         streak: { ...state.streak, sessionsThisWeek: 0 },
       };
+
+        case ENSURE_CURRENT_WEEK: {
+      const nowWeek = getWeekId(new Date());
+      if (nowWeek === state.streak.weekId) return state;
+
+      // Week changed → update streak based on whether last week met goal
+      const metGoal = state.streak.sessionsThisWeek >= state.goals.weeklyGoal;
+
+      return {
+        ...state,
+        streak: {
+          ...state.streak,
+          weekId: nowWeek,
+          sessionsThisWeek: 0,
+          streakWeeks: metGoal ? state.streak.streakWeeks + 1 : 0,
+        },
+      };
+    }
+
+    case COMPLETE_SESSION: {
+      // Always ensure week is current before applying session
+      const nowWeek = getWeekId(new Date());
+      const isNewWeek = nowWeek !== state.streak.weekId;
+
+      // If new week, rollover first (same logic as ENSURE_CURRENT_WEEK)
+      let nextState = state;
+      if (isNewWeek) {
+        const metGoal = state.streak.sessionsThisWeek >= state.goals.weeklyGoal;
+        nextState = {
+          ...state,
+          streak: {
+            ...state.streak,
+            weekId: nowWeek,
+            sessionsThisWeek: 0,
+            streakWeeks: metGoal ? state.streak.streakWeeks + 1 : 0,
+          },
+        };
+      }
+
+      const session = {
+        id: crypto.randomUUID(),
+        ts: Date.now(),
+        splitName: action.payload?.splitName ?? "Session",
+        weekId: nowWeek,
+      };
+
+      return {
+        ...nextState,
+        log: {
+          ...nextState.log,
+          sessions: [session, ...(nextState.log.sessions || [])],
+        },
+        streak: {
+          ...nextState.streak,
+          sessionsThisWeek: nextState.streak.sessionsThisWeek + 1,
+        },
+      };
+    }
+
 
     default:
       return state;

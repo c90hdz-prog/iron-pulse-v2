@@ -1,5 +1,6 @@
 import { createStore } from "./state/store.js";
-import { openModal, closeModal, addSet, resetWeek } from "./state/actions.js";
+import { openModal, closeModal, addSet, resetWeek, completeSession, ensureCurrentWeek } from "./state/actions.js";
+
 import { renderModalRoot } from "./ui/modal.js";
 import { toast } from "./ui/toast.js";
 
@@ -11,6 +12,7 @@ import { renderTodaysSplit } from "./features/split/todaysSplit.js";
 import { renderAfterburnCard, MODAL_AFTERBURN } from "./features/afterburn/afterburnModal.js";
 
 const store = createStore();
+store.dispatch(ensureCurrentWeek());
 
 const els = {
   streakBanner: document.getElementById("streakBanner"),
@@ -38,9 +40,16 @@ function render() {
   renderAfterburnCard(els.afterburn, () => store.dispatch(openModal(MODAL_AFTERBURN)));
 
   // Hook split buttons after render
-  els.todaysSplit.querySelector("#btnLogSetFromSplit")?.addEventListener("click", () => {
-    store.dispatch(openModal(MODAL_LOG_SET, { exercise: "Bench Press" }));
-  });
+els.todaysSplit.querySelector("#btnCompleteSession")?.addEventListener("click", () => {
+  store.dispatch(ensureCurrentWeek());
+  store.dispatch(completeSession({ splitName: "Push" }));
+  toast("Session complete ✅");
+});
+els.todaysSplit.querySelector("#btnLogSetFromSplit")?.addEventListener("click", () => {
+  store.dispatch(ensureCurrentWeek());
+  store.dispatch(openModal(MODAL_LOG_SET, { exercise: "Bench Press" }));
+});
+
 
   // Modal
   const modal = state.ui.modal;
@@ -70,8 +79,10 @@ render();
 
 // CTA
 els.btnCTA.addEventListener("click", () => {
+  store.dispatch(ensureCurrentWeek());
   store.dispatch(openModal(MODAL_LOG_SET));
 });
+
 
 // Settings placeholder
 els.btnSettings.addEventListener("click", () => {

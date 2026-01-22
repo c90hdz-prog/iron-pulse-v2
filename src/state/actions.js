@@ -10,3 +10,15 @@ export const closeModal = () => ({ type: CLOSE_MODAL });
 export const addSet = (entry) => ({ type: ADD_SET, entry });
 export const setWeeklyGoal = (goal) => ({ type: SET_WEEKLY_GOAL, goal });
 export const resetWeek = () => ({ type: RESET_WEEK });
+
+export const COMPLETE_SESSION = "COMPLETE_SESSION";
+export const ENSURE_CURRENT_WEEK = "ENSURE_CURRENT_WEEK";
+
+export const completeSession = (payload = {}) => ({
+  type: COMPLETE_SESSION,
+  payload,
+});
+
+export const ensureCurrentWeek = () => ({
+  type: ENSURE_CURRENT_WEEK,
+});
