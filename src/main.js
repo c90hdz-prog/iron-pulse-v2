@@ -36,15 +36,21 @@ function render() {
     }
   });
   renderWeeklyVolume(els.weeklyVolume, state);
-  renderTodaysSplit(els.todaysSplit);
+  renderTodaysSplit(els.todaysSplit, state);
+
   renderAfterburnCard(els.afterburn, () => store.dispatch(openModal(MODAL_AFTERBURN)));
 
   // Hook split buttons after render
 els.todaysSplit.querySelector("#btnCompleteSession")?.addEventListener("click", () => {
+  const before = store.getState().streak.lastSessionDay;
   store.dispatch(ensureCurrentWeek());
   store.dispatch(completeSession({ splitName: "Push" }));
-  toast("Session complete ✅");
+  const after = store.getState().streak.lastSessionDay;
+
+  if (before !== after) toast("Session complete ✅");
+  else toast("Already completed today");
 });
+
 els.todaysSplit.querySelector("#btnLogSetFromSplit")?.addEventListener("click", () => {
   store.dispatch(ensureCurrentWeek());
   store.dispatch(openModal(MODAL_LOG_SET, { exercise: "Bench Press" }));

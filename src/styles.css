@@ -272,3 +272,7 @@ input {
     box-shadow: var(--shadow);
     font-weight: 650;
 }
+button:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}

@@ -1,4 +1,6 @@
 import { getWeekId } from "./time.js";
+import { dayKey } from "./date.js";
+
 
 import {
   OPEN_MODAL,
@@ -26,6 +28,7 @@ export const initialState = {
     weekId: getWeekId(),
     sessionsThisWeek: 0, // will compute later from sessions/log events
     streakWeeks: 0,
+    lastSessionDay: null,
   },
 };
 
@@ -49,7 +52,7 @@ export function reducer(state, action) {
         streak: { ...state.streak, sessionsThisWeek: 0 },
       };
 
-        case ENSURE_CURRENT_WEEK: {
+    case ENSURE_CURRENT_WEEK: {
       const nowWeek = getWeekId(new Date());
       if (nowWeek === state.streak.weekId) return state;
 
@@ -63,6 +66,7 @@ export function reducer(state, action) {
           weekId: nowWeek,
           sessionsThisWeek: 0,
           streakWeeks: metGoal ? state.streak.streakWeeks + 1 : 0,
+          lastSessionDay: null,
         },
       };
     }
@@ -83,8 +87,16 @@ export function reducer(state, action) {
             weekId: nowWeek,
             sessionsThisWeek: 0,
             streakWeeks: metGoal ? state.streak.streakWeeks + 1 : 0,
+            lastSessionDay: null,
           },
         };
+      }
+
+      const today = dayKey(new Date());
+
+      // Guard: only allow 1 completed session per day
+      if (nextState.streak.lastSessionDay === today) {
+        return nextState;
       }
 
       const session = {
@@ -103,7 +115,9 @@ export function reducer(state, action) {
         streak: {
           ...nextState.streak,
           sessionsThisWeek: nextState.streak.sessionsThisWeek + 1,
+          lastSessionDay: today,
         },
+
       };
     }
 
