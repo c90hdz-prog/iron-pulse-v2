@@ -1,19 +1,42 @@
-export function renderWeeklyVolume(el, state) {
-  // For now: fake computed volume = sum(reps * weight) from last 7 days
-  const weekMs = 7 * 24 * 60 * 60 * 1000;
-  const now = Date.now();
-  const vol = state.log.sets
-    .filter(s => now - s.ts <= weekMs)
-    .reduce((sum, s) => sum + (Number(s.reps)||0) * (Number(s.weight)||0), 0);
+import { getWeekId } from "../../state/time.js";
+import { monthKey } from "../../state/month.js";
+
+export function renderWeeklyVolume(el, state, view = "week") {
+  const now = new Date();
+  const currentWeek = getWeekId(now);
+  const currentMonth = monthKey(now);
+
+  const sets = state.log.sets || [];
+
+  const volume = sets.reduce((sum, s) => {
+    if (view === "week" && getWeekId(new Date(s.ts)) !== currentWeek) return sum;
+    if (view === "month" && monthKey(new Date(s.ts)) !== currentMonth) return sum;
+
+    return sum + (Number(s.reps) || 0) * (Number(s.weight) || 0);
+  }, 0);
 
   el.innerHTML = `
-    <h3>Weekly Volume</h3>
+    <h3>${view === "week" ? "Weekly Volume" : "Monthly Volume"}</h3>
+
     <div class="row">
-      <div class="big">${Math.round(vol).toLocaleString()} lbs</div>
-      <div class="pill">Week</div>
+      <div class="big">${Math.round(volume).toLocaleString()} lbs</div>
+
+      <div style="display:flex; gap:6px;">
+        <button class="pill ${view === "week" ? "active" : ""}" id="volWeek">Week</button>
+        <button class="pill ${view === "month" ? "active" : ""}" id="volMonth">Month</button>
+      </div>
     </div>
-    <div style="margin-top:12px; color: var(--muted); font-size: 12px;">
-      Tomorrow: add Month toggle (button, not swipe).
+
+    <div style="margin-top:10px; color: var(--muted); font-size: 12px;">
+      ${view === "week" ? `Week ${currentWeek}` : `Month ${currentMonth}`}
     </div>
   `;
+
+  el.querySelector("#volWeek")?.addEventListener("click", () => {
+    renderWeeklyVolume(el, state, "week");
+  });
+
+  el.querySelector("#volMonth")?.addEventListener("click", () => {
+    renderWeeklyVolume(el, state, "month");
+  });
 }

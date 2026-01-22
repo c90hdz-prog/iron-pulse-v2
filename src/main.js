@@ -3,6 +3,7 @@ import { openModal, closeModal, addSet, resetWeek, completeSession, ensureCurren
 
 import { renderModalRoot } from "./ui/modal.js";
 import { toast } from "./ui/toast.js";
+import { haptic } from "./ui/haptics.js";
 
 import { MODAL_LOG_SET, loggingModalHtml } from "./features/logging/loggingModal.js";
 import { renderStreakBanner } from "./features/streak/streakBanner.js";
@@ -43,13 +44,32 @@ function render() {
   // Hook split buttons after render
 els.todaysSplit.querySelector("#btnCompleteSession")?.addEventListener("click", () => {
   const before = store.getState().streak.lastSessionDay;
+
   store.dispatch(ensureCurrentWeek());
   store.dispatch(completeSession({ splitName: "Push" }));
+
   const after = store.getState().streak.lastSessionDay;
 
-  if (before !== after) toast("Session complete ✅");
-  else toast("Already completed today");
+  if (before !== after) {
+    toast("Session complete ✅");
+    haptic("success");
+
+    // After state updates + re-render, animate the button once
+    requestAnimationFrame(() => {
+      const btn = els.todaysSplit.querySelector("#btnCompleteSession");
+      if (!btn) return;
+
+      btn.classList.remove("pulseWin"); // reset if somehow present
+      void btn.offsetWidth;             // force reflow so animation restarts
+      btn.classList.add("pulseWin");
+
+      setTimeout(() => btn.classList.remove("pulseWin"), 700);
+    });
+  } else {
+    toast("Already completed today");
+  }
 });
+
 
 els.todaysSplit.querySelector("#btnLogSetFromSplit")?.addEventListener("click", () => {
   store.dispatch(ensureCurrentWeek());

@@ -276,3 +276,34 @@ button:disabled {
     opacity: 0.55;
     cursor: not-allowed;
 }
+/* Micro reward pulse */
+.pulseWin {
+    animation: pulseWin 650ms ease-out;
+}
+
+@keyframes pulseWin {
+    0% {
+        transform: scale(1);
+        filter: brightness(1);
+    }
+
+    35% {
+        transform: scale(1.03);
+        filter: brightness(1.12);
+    }
+
+    100% {
+        transform: scale(1);
+        filter: brightness(1);
+    }
+}
+
+/* Optional: a little nicer disabled look */
+button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+.pill.active {
+    background: rgba(255, 255, 255, 0.22);
+    color: #fff;
+}
