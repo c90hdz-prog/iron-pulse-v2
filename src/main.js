@@ -1,9 +1,10 @@
 import { createStore } from "./state/store.js";
 import { openModal, closeModal, addSet, resetWeek, completeSession, ensureCurrentWeek } from "./state/actions.js";
-
 import { renderModalRoot } from "./ui/modal.js";
 import { toast } from "./ui/toast.js";
 import { haptic } from "./ui/haptics.js";
+import { dayKey } from "./state/date.js";
+import { getWeekId } from "./state/time.js";
 
 import { MODAL_LOG_SET, loggingModalHtml } from "./features/logging/loggingModal.js";
 import { renderStreakBanner } from "./features/streak/streakBanner.js";
@@ -73,8 +74,22 @@ els.todaysSplit.querySelector("#btnCompleteSession")?.addEventListener("click", 
 
 els.todaysSplit.querySelector("#btnLogSetFromSplit")?.addEventListener("click", () => {
   store.dispatch(ensureCurrentWeek());
-  store.dispatch(openModal(MODAL_LOG_SET, { exercise: "Bench Press" }));
+
+  const chosen = els.todaysSplit.getAttribute("data-selected-ex");
+  const exercise = chosen || "Bench Press";
+
+  // If user tapped a recommended exercise pill, todaysSplit.js set data-origin="recommended"
+  // Otherwise default to custom
+  const origin = els.todaysSplit.getAttribute("data-origin") || (chosen ? "recommended" : "custom");
+  els.todaysSplit.setAttribute("data-origin", origin);
+
+  // clear one-time exercise selection
+  els.todaysSplit.removeAttribute("data-selected-ex");
+
+  store.dispatch(openModal(MODAL_LOG_SET, { exercise }));
 });
+
+
 
 
   // Modal
@@ -182,24 +197,35 @@ function bindLogSetModal() {
 
   renderTime();
 
-  overlay.querySelector("#btnSaveSet")?.addEventListener("click", () => {
-    const entry = {
-      id: crypto.randomUUID(),
-      ts: Date.now(),
-      exercise: (inExercise.value || "").trim(),
-      reps: Number(inReps.value || 0),
-      weight: Number(inWeight.value || 0),
-    };
+overlay.querySelector("#btnSaveSet")?.addEventListener("click", () => {
+  const splitName = els.todaysSplit?.getAttribute("data-split-name") || "Session";
+  const origin = els.todaysSplit?.getAttribute("data-origin") || "custom";
 
-    if (!entry.exercise) {
-      toast("Add an exercise name");
-      return;
-    }
+  const entry = {
+    id: crypto.randomUUID(),
+    ts: Date.now(),
+    dayId: dayKey(new Date()),
+    weekId: getWeekId(new Date()),
+    splitName,
+    origin,
+    exercise: (inExercise.value || "").trim(),
+    reps: Number(inReps.value || 0),
+    weight: Number(inWeight.value || 0),
+  };
 
-    store.dispatch(addSet(entry));
-    toast("Set saved");
-    store.dispatch(closeModal());
-  });
+  // clear one-time origin so it doesn't stick
+  els.todaysSplit?.removeAttribute("data-origin");
+
+  if (!entry.exercise) {
+    toast("Add an exercise name");
+    return;
+  }
+
+  store.dispatch(addSet(entry));
+  toast("Set saved");
+  store.dispatch(closeModal());
+});
+
 }
 
 function simpleAfterburnModalHtml() {

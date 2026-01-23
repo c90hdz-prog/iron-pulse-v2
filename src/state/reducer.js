@@ -46,18 +46,31 @@ export function reducer(state, action) {
     case SET_WEEKLY_GOAL:
       return { ...state, goals: { ...state.goals, weeklyGoal: Math.max(1, Number(action.goal) || 2) } };
 
-    case RESET_WEEK:
+    case RESET_WEEK: {
+      const weekId = state.streak.weekId;
       return {
         ...state,
-        streak: { ...state.streak, sessionsThisWeek: 0 },
+        log: {
+          ...state.log,
+          sessions: (state.log.sessions || []).filter(s => s.weekId !== weekId),
+        },
+        streak: {
+          ...state.streak,
+          lastSessionDay: null,
+        },
       };
+    }
+
 
     case ENSURE_CURRENT_WEEK: {
       const nowWeek = getWeekId(new Date());
       if (nowWeek === state.streak.weekId) return state;
 
       // Week changed → update streak based on whether last week met goal
-      const metGoal = state.streak.sessionsThisWeek >= state.goals.weeklyGoal;
+      const oldWeekId = state.streak.weekId;
+      const sessionsLastWeek = (state.log.sessions || []).filter(s => s.weekId === oldWeekId).length;
+      const metGoal = sessionsLastWeek >= state.goals.weeklyGoal;
+
 
       return {
         ...state,
@@ -114,9 +127,9 @@ export function reducer(state, action) {
         },
         streak: {
           ...nextState.streak,
-          sessionsThisWeek: nextState.streak.sessionsThisWeek + 1,
           lastSessionDay: today,
         },
+
 
       };
     }
