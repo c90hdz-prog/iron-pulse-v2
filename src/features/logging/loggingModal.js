@@ -2,6 +2,7 @@ export const MODAL_LOG_SET = "LOG_SET";
 
 export function loggingModalHtml(payload = {}) {
   const exercise = payload.exercise ?? "";
+
   return `
     <div class="modal" role="dialog" aria-modal="true">
       <div class="modalHeader">
@@ -12,20 +13,25 @@ export function loggingModalHtml(payload = {}) {
       <div class="modalBody">
         <div class="field">
           <label>Exercise</label>
-          <input id="inExercise" placeholder="Bench Press" value="${escapeHtml(exercise)}"/>
+          <input
+            id="inExercise"
+            placeholder="Bench Press"
+            value="${escapeHtml(exercise)}"
+            data-exname="${escapeHtml(payload.recommendedName || "")}"
+            data-exid="${escapeHtml(payload.recommendedId || "")}"
+          />
         </div>
 
-      <div class="fieldRow" style="margin-top:10px;">
-        <div class="field">
-          <label>Reps</label>
-          <input id="inReps" inputmode="numeric" placeholder="8" />
+        <div class="row" style="gap:10px;">
+          <div class="field" style="flex:1;">
+            <label>Reps</label>
+            <input id="inReps" inputmode="numeric" placeholder="8" />
+          </div>
+          <div class="field" style="flex:1;">
+            <label>Weight</label>
+            <input id="inWeight" inputmode="numeric" placeholder="135" />
+          </div>
         </div>
-        <div class="field">
-          <label>Weight</label>
-          <input id="inWeight" inputmode="numeric" placeholder="135" />
-        </div>
-      </div>
-
 
         <div class="card" style="padding:12px; margin-top:4px;">
           <div class="row">
@@ -52,5 +58,9 @@ export function loggingModalHtml(payload = {}) {
 }
 
 function escapeHtml(s) {
-  return String(s).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;");
+  return String(s)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
 }

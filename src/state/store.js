@@ -1,47 +1,43 @@
 import { reducer, initialState } from "./reducer.js";
-import { loadState, saveState } from "./storage.js";
+import { loadPersistedState, savePersistedState, selectPersistSubset } from "./persist.js";
 
 export function createStore() {
-  let state = loadState() ?? initialState;
+  let state = initialState;
 
-// Patch older saved state (future-proof)
-state = {
-  ...initialState,
-  ...state,
-  log: {
-    ...initialState.log,
-    ...(state.log || {}),
-    sets: state.log?.sets || [],
-    sessions: state.log?.sessions || [],
-  },
-  streak: {
-    ...initialState.streak,
-    ...(state.streak || {}),
-  },
-  goals: {
-    ...initialState.goals,
-    ...(state.goals || {}),
-  },
-  ui: {
-    ...initialState.ui,
-    ...(state.ui || {}),
-  },
-};
+  // Load persisted subset + merge onto initialState (so new fields get defaults)
+  const persisted = loadPersistedState();
+  if (persisted) {
+    state = {
+      ...initialState,
+      ...persisted,
+      // deep merge the known nested objects so we don’t lose defaults
+      goals: { ...initialState.goals, ...persisted.goals },
+      log: { ...initialState.log, ...persisted.log },
+      streak: { ...initialState.streak, ...persisted.streak },
+      ui: { ...initialState.ui }, // always reset UI
+    };
+  }
 
   const listeners = new Set();
 
-  const getState = () => state;
+  function getState() {
+    return state;
+  }
 
-  const dispatch = (action) => {
+  function dispatch(action) {
     state = reducer(state, action);
-    saveState(state);
-    listeners.forEach((fn) => fn(state));
-  };
 
-  const subscribe = (fn) => {
+    // Persist only durable state
+    savePersistedState(selectPersistSubset(state));
+
+    listeners.forEach((fn) => fn());
+    return action;
+  }
+
+  function subscribe(fn) {
     listeners.add(fn);
     return () => listeners.delete(fn);
-  };
+  }
 
   return { getState, dispatch, subscribe };
 }

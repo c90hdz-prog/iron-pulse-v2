@@ -13,6 +13,8 @@ export function renderTodaysSplit(el, state) {
 el.setAttribute("data-split-name", plan.splitName);
 el.removeAttribute("data-origin");
 el.removeAttribute("data-selected-ex");
+el.removeAttribute("data-selected-exid");
+
 
   el.innerHTML = `
     <h3>Today's Split</h3>
@@ -24,10 +26,11 @@ el.removeAttribute("data-selected-ex");
 
     <div style="margin-top:10px; display:grid; gap:8px;">
       ${plan.exercises.slice(0, 4).map((ex) => `
-        <button class="pill" data-ex="${ex.name}" style="text-align:left;">
+        <button class="pill" data-ex="${ex.name}" data-exid="${ex.id}" style="text-align:left;">
           ${ex.name}
         </button>
       `).join("")}
+
       ${plan.exercises.length > 4 ? `<div style="color:var(--muted); font-size:12px;">+ ${plan.exercises.length - 4} more</div>` : ""}
     </div>
 
@@ -40,19 +43,24 @@ el.removeAttribute("data-selected-ex");
     </div>
   `;
 
-  el.querySelectorAll("[data-ex]").forEach((btn) => {
-  btn.addEventListener("click", () => {
-    const exName = btn.getAttribute("data-ex");
+el.querySelectorAll("[data-ex]").forEach((btn) => {
+  btn.onclick = () => {
+    const exName = btn.getAttribute("data-ex") || "";
+    const exId = btn.getAttribute("data-exid") || "";
 
-    // Mark that this came from a recommended exercise tap
-    el.setAttribute("data-origin", "recommended");
-
-    // Prefill the modal exercise name
-    el.setAttribute("data-selected-ex", exName);
-
-    // Open modal via existing button handler
-    el.querySelector("#btnLogSetFromSplit")?.click();
-  });
+    el.dispatchEvent(
+      new CustomEvent("ip:logSet", {
+        bubbles: true,
+        detail: {
+          exercise: exName,
+          exerciseId: exId,
+          origin: "recommended",
+        },
+      })
+    );
+  };
 });
+
+
 
 }

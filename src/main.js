@@ -5,6 +5,8 @@ import { toast } from "./ui/toast.js";
 import { haptic } from "./ui/haptics.js";
 import { dayKey } from "./state/date.js";
 import { getWeekId } from "./state/time.js";
+import { renderTodaySummary } from "./features/todaySummary/todaySummaryCard.js";
+import { selectTodaySummary } from "./state/selectors.js";
 
 import { MODAL_LOG_SET, loggingModalHtml } from "./features/logging/loggingModal.js";
 import { renderStreakBanner } from "./features/streak/streakBanner.js";
@@ -25,7 +27,27 @@ const els = {
   modalRoot: document.getElementById("modalRoot"),
   btnCTA: document.getElementById("btnCTA"),
   btnSettings: document.getElementById("btnSettings"),
+  todaySummary: document.getElementById("todaySummary"),
+
 };
+
+// Open Log Set modal from Today Split (recommended exercise pills)
+els.todaysSplit?.addEventListener("ip:logSet", (e) => {
+  store.dispatch(ensureCurrentWeek());
+
+  const { exercise, exerciseId, origin } = e.detail || {};
+  if (origin) els.todaysSplit.setAttribute("data-origin", origin);
+
+  store.dispatch(
+    openModal(MODAL_LOG_SET, {
+      exercise: exercise || "Bench Press",
+      exerciseId: exerciseId || "",
+      recommendedName: exercise || "",
+      recommendedId: exerciseId || "",
+    })
+  );
+});
+
 
 function render() {
   const state = store.getState();
@@ -39,55 +61,54 @@ function render() {
   });
   renderWeeklyVolume(els.weeklyVolume, state);
   renderTodaysSplit(els.todaysSplit, state);
+  renderTodaySummary(els.todaySummary, selectTodaySummary(state));
 
   renderAfterburnCard(els.afterburn, () => store.dispatch(openModal(MODAL_AFTERBURN)));
 
   // Hook split buttons after render
-els.todaysSplit.querySelector("#btnCompleteSession")?.addEventListener("click", () => {
-  const before = store.getState().streak.lastSessionDay;
+const btnComplete = els.todaysSplit.querySelector("#btnCompleteSession");
+if (btnComplete) {
+  btnComplete.onclick = () => {
+    const before = store.getState().streak.lastSessionDay;
 
-  store.dispatch(ensureCurrentWeek());
-  store.dispatch(completeSession({ splitName: "Push" }));
+    store.dispatch(ensureCurrentWeek());
 
-  const after = store.getState().streak.lastSessionDay;
+    // use the current split name instead of hardcoding "Push"
+    const splitName = els.todaysSplit.getAttribute("data-split-name") || "Session";
+    store.dispatch(completeSession({ splitName }));
 
-  if (before !== after) {
-    toast("Session complete ✅");
-    haptic("success");
+    const after = store.getState().streak.lastSessionDay;
 
-    // After state updates + re-render, animate the button once
-    requestAnimationFrame(() => {
-      const btn = els.todaysSplit.querySelector("#btnCompleteSession");
-      if (!btn) return;
+    if (before !== after) {
+      toast("Session complete ✅");
+      haptic("success");
 
-      btn.classList.remove("pulseWin"); // reset if somehow present
-      void btn.offsetWidth;             // force reflow so animation restarts
-      btn.classList.add("pulseWin");
+      requestAnimationFrame(() => {
+        const btn = els.todaysSplit.querySelector("#btnCompleteSession");
+        if (!btn) return;
 
-      setTimeout(() => btn.classList.remove("pulseWin"), 700);
-    });
-  } else {
-    toast("Already completed today");
-  }
-});
+        btn.classList.remove("pulseWin");
+        void btn.offsetWidth;
+        btn.classList.add("pulseWin");
+
+        setTimeout(() => btn.classList.remove("pulseWin"), 700);
+      });
+    } else {
+      toast("Already completed today");
+    }
+  };
+}
 
 
-els.todaysSplit.querySelector("#btnLogSetFromSplit")?.addEventListener("click", () => {
-  store.dispatch(ensureCurrentWeek());
+const btnLog = els.todaysSplit.querySelector("#btnLogSetFromSplit");
+if (btnLog) {
+  btnLog.onclick = () => {
+    store.dispatch(ensureCurrentWeek());
+    els.todaysSplit.setAttribute("data-origin", "custom");
+    store.dispatch(openModal(MODAL_LOG_SET, { exercise: "Bench Press", exerciseId: "" }));
+  };
+}
 
-  const chosen = els.todaysSplit.getAttribute("data-selected-ex");
-  const exercise = chosen || "Bench Press";
-
-  // If user tapped a recommended exercise pill, todaysSplit.js set data-origin="recommended"
-  // Otherwise default to custom
-  const origin = els.todaysSplit.getAttribute("data-origin") || (chosen ? "recommended" : "custom");
-  els.todaysSplit.setAttribute("data-origin", origin);
-
-  // clear one-time exercise selection
-  els.todaysSplit.removeAttribute("data-selected-ex");
-
-  store.dispatch(openModal(MODAL_LOG_SET, { exercise }));
-});
 
 
 
@@ -137,6 +158,13 @@ function bindLogSetModal() {
   overlay.querySelectorAll("[data-close]").forEach((btn) =>
     btn.addEventListener("click", () => store.dispatch(closeModal()))
   );
+
+  const makeCustomExerciseId = (name) =>
+    "custom:" + String(name || "")
+      .trim()
+      .toLowerCase()
+      .replaceAll(/[^a-z0-9]+/g, "-")
+      .replaceAll(/^-+|-+$/g, "");
 
   const inExercise = overlay.querySelector("#inExercise");
   const inReps = overlay.querySelector("#inReps");
@@ -199,7 +227,20 @@ function bindLogSetModal() {
 
 overlay.querySelector("#btnSaveSet")?.addEventListener("click", () => {
   const splitName = els.todaysSplit?.getAttribute("data-split-name") || "Session";
-  const origin = els.todaysSplit?.getAttribute("data-origin") || "custom";
+  const originAttr = els.todaysSplit?.getAttribute("data-origin") || "custom";
+
+  const exerciseName = (inExercise.value || "").trim();
+  const recommendedId = inExercise.dataset.exid || "";
+  const recommendedName = inExercise.dataset.exname || "";
+
+  // If user edits the recommended name, treat as custom
+  const isStillRecommended =
+    originAttr === "recommended" &&
+    exerciseName === recommendedName &&
+    !!recommendedId;
+
+  const exerciseId = isStillRecommended ? recommendedId : makeCustomExerciseId(exerciseName);
+  const origin = isStillRecommended ? "recommended" : "custom";
 
   const entry = {
     id: crypto.randomUUID(),
@@ -208,7 +249,8 @@ overlay.querySelector("#btnSaveSet")?.addEventListener("click", () => {
     weekId: getWeekId(new Date()),
     splitName,
     origin,
-    exercise: (inExercise.value || "").trim(),
+    exerciseId,
+    exercise: exerciseName,
     reps: Number(inReps.value || 0),
     weight: Number(inWeight.value || 0),
   };
@@ -224,7 +266,8 @@ overlay.querySelector("#btnSaveSet")?.addEventListener("click", () => {
   store.dispatch(addSet(entry));
   toast("Set saved");
   store.dispatch(closeModal());
-});
+  });
+
 
 }
 
