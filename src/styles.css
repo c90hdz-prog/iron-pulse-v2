@@ -383,6 +383,21 @@ button:disabled {
     font-size: 12px;
 }
 
+.pillSelectable {
+    cursor: pointer;
+}
 
+.pillActive {
+    background: rgba(255, 255, 255, 0.22);
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.22);
+}
+
+.focusPanel {
+    border: 1px solid var(--line);
+    background: rgba(0, 0, 0, 0.18);
+    border-radius: var(--radius);
+    padding: 12px;
+}
 
 

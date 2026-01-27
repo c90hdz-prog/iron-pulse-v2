@@ -13,7 +13,8 @@ export function createStore() {
       // deep merge the known nested objects so we don’t lose defaults
       goals: { ...initialState.goals, ...persisted.goals },
       log: { ...initialState.log, ...persisted.log },
-      streak: { ...initialState.streak, ...persisted.streak },
+      streak: { ...initialState.streak, ...persisted.streak }, 
+      program: { ...initialState.program, ...persisted.program },
       ui: { ...initialState.ui }, // always reset UI
     };
   }

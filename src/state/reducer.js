@@ -1,22 +1,27 @@
 import { getWeekId } from "./time.js";
 import { dayKey } from "./date.js";
 
-
 import {
   OPEN_MODAL,
   CLOSE_MODAL,
   ADD_SET,
+  UPDATE_SET,
   SET_WEEKLY_GOAL,
   RESET_WEEK,
   COMPLETE_SESSION,
-  ENSURE_CURRENT_WEEK
-} from "./actions.js";
+  ENSURE_CURRENT_WEEK,
+  SET_SELECTED_EXERCISE,
+  SET_TODAY_OVERRIDE,
+  CLEAR_TODAY_OVERRIDE
+  } from "./actions.js";
 
 
 export const initialState = {
   ui: {
-    modal: { open: false, type: null, payload: {} },
-  },
+  modal: { open: false, type: null, payload: {} },
+  selectedExercise: { id: null, name: null },
+},
+
   goals: {
     weeklyGoal: 2,
   },
@@ -30,6 +35,10 @@ export const initialState = {
     streakWeeks: 0,
     lastSessionDay: null,
   },
+  program: {
+  todayOverride: null, // { dayId, mode, splitKey?, offset? }
+},
+
 };
 
 export function reducer(state, action) {
@@ -61,6 +70,29 @@ export function reducer(state, action) {
       };
     }
 
+case SET_TODAY_OVERRIDE: {
+  const o = action.payload || null;
+  return {
+    ...state,
+    program: {
+      ...state.program,
+      todayOverride: o,
+    },
+  };
+}
+
+case CLEAR_TODAY_OVERRIDE: {
+  const dayId = action.payload?.dayId;
+  const cur = state.program?.todayOverride;
+  const keep = cur && dayId && cur.dayId !== dayId ? cur : null;
+  return {
+    ...state,
+    program: {
+      ...state.program,
+      todayOverride: keep,
+    },
+  };
+}
 
     case ENSURE_CURRENT_WEEK: {
       const nowWeek = getWeekId(new Date());
@@ -83,6 +115,30 @@ export function reducer(state, action) {
         },
       };
     }
+
+    case SET_SELECTED_EXERCISE:
+      return {
+        ...state,
+        ui: {
+          ...state.ui,
+          selectedExercise: {
+            id: action.payload?.id ?? null,
+            name: action.payload?.name ?? null,
+          },
+        },
+      };
+
+case UPDATE_SET: {
+  const sets = Array.isArray(state.log.sets) ? state.log.sets : [];
+  return {
+    ...state,
+    log: {
+      ...state.log,
+      sets: sets.map((s) => (s.id === action.id ? { ...s, ...action.patch } : s)),
+    },
+  };
+}
+
 
     case COMPLETE_SESSION: {
       // Always ensure week is current before applying session

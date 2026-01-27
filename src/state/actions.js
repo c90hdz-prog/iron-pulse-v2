@@ -3,6 +3,29 @@ export const CLOSE_MODAL = "CLOSE_MODAL";
 export const ADD_SET = "ADD_SET";
 export const SET_WEEKLY_GOAL = "SET_WEEKLY_GOAL";
 export const RESET_WEEK = "RESET_WEEK";
+export const SET_SELECTED_EXERCISE = "SET_SELECTED_EXERCISE";
+export const UPDATE_SET = "UPDATE_SET";
+export const SET_TODAY_OVERRIDE = "SET_TODAY_OVERRIDE";
+export const CLEAR_TODAY_OVERRIDE = "CLEAR_TODAY_OVERRIDE";
+
+export function setTodayOverride(payload) {
+  // payload: { dayId, mode: "skip" | "override", splitKey?: string, offset?: number }
+  return { type: SET_TODAY_OVERRIDE, payload };
+}
+
+export function clearTodayOverride(dayId) {
+  return { type: CLEAR_TODAY_OVERRIDE, payload: { dayId } };
+}
+
+export const updateSet = (id, patch) => ({
+  type: UPDATE_SET,
+  id,
+  patch,
+});
+
+export function setSelectedExercise(payload) {
+  return { type: SET_SELECTED_EXERCISE, payload };
+}
 
 export const openModal = (modalType, payload = {}) => ({ type: OPEN_MODAL, modalType, payload });
 export const closeModal = () => ({ type: CLOSE_MODAL });

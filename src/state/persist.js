@@ -22,9 +22,7 @@ export function savePersistedState(state) {
 // Only keep durable state; drop UI stuff like modals
 export function selectPersistSubset(state) {
   return {
-    goals: {
-      weeklyGoal: state?.goals?.weeklyGoal ?? 2,
-    },
+    goals: { weeklyGoal: state?.goals?.weeklyGoal ?? 2 },
     log: {
       sets: Array.isArray(state?.log?.sets) ? state.log.sets : [],
       sessions: Array.isArray(state?.log?.sessions) ? state.log.sessions : [],
@@ -33,7 +31,11 @@ export function selectPersistSubset(state) {
       weekId: state?.streak?.weekId ?? null,
       streakWeeks: state?.streak?.streakWeeks ?? 0,
       lastSessionDay: state?.streak?.lastSessionDay ?? null,
-      // (Optional) do NOT persist sessionsThisWeek if it’s derived; leave out
+    },
+    program: {
+      todayOverride: state?.program?.todayOverride ?? null,
     },
   };
 }
+
+

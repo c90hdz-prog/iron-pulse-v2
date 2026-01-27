@@ -1,6 +1,24 @@
 import { getWeekId } from "./time.js";
 import { dayKey } from "./date.js";
 
+
+
+export function selectSetsForTodayExercise(state, exerciseId) {
+  const todayId = dayKey(new Date());
+  const sets = Array.isArray(state?.log?.sets) ? state.log.sets : [];
+  return sets
+    .filter((s) => s.dayId === todayId && s.exerciseId === exerciseId)
+    .sort((a, b) => (a.slotIndex ?? 999) - (b.slotIndex ?? 999) || (a.ts - b.ts));
+}
+
+export function selectTodayExerciseSummary(state, exerciseId) {
+  const items = selectSetsForTodayExercise(state, exerciseId);
+  const setsCount = items.length;
+  const totalLbs = items.reduce((sum, s) => sum + (Number(s.reps) || 0) * (Number(s.weight) || 0), 0);
+  return { setsCount, totalLbs };
+}
+
+
 export function countSessionsForWeek(state, weekId) {
   const sessions = state?.log?.sessions || [];
   return sessions.filter((s) => s.weekId === weekId).length;
