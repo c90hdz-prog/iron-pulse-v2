@@ -127,21 +127,7 @@ body {
     font-weight: 750;
 }
 
-.row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-}
 
-.pill {
-    padding: 8px 10px;
-    border: 1px solid var(--line);
-    border-radius: 999px;
-    background: rgba(0, 0, 0, 0.18);
-    color: var(--muted);
-    font-size: 12px;
-}
 
 .footer {
     position: sticky;
@@ -173,6 +159,12 @@ body.noScroll {
 }
 
 /* Modal */
+
+/* =========================
+   MODAL (single source of truth)
+   ========================= */
+
+/* Overlay */
 .modalOverlay {
     position: fixed;
     inset: 0;
@@ -185,6 +177,7 @@ body.noScroll {
     z-index: 1000;
 }
 
+/* Sheet */
 .modal {
     width: calc(100% - 24px);
     max-width: 420px;
@@ -198,12 +191,25 @@ body.noScroll {
     overflow: hidden;
     /* stops inner bleed */
 
-    /* readability + premium feel */
     background: rgba(18, 18, 22, 0.96);
     border: 1px solid rgba(255, 255, 255, 0.08);
     box-shadow: 0 18px 60px rgba(0, 0, 0, 0.55);
 }
 
+/* Header */
+.modalHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px;
+    border-bottom: 1px solid var(--line);
+}
+
+.modalTitle {
+    font-weight: 800;
+}
+
+/* Body scroll area */
 .modalBody {
     flex: 1;
     padding: 16px;
@@ -212,21 +218,77 @@ body.noScroll {
     /* kill sideways scroll */
 }
 
+/* Common layout helpers inside modal */
 .modal .row,
 .modal .grid {
     min-width: 0;
-    /* CRITICAL for flex children */
+    /* critical for flex/grid children */
 }
 
-.modal input,
+.row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+/* Pills */
+.pill {
+    padding: 8px 10px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.18);
+    color: var(--muted);
+    font-size: 12px;
+    min-width: 0;
+}
+
+/* Cards inside modal */
+.modal .card {
+    max-width: 100%;
+    overflow: hidden;
+}
+
+/* Fields */
+.field {
+    display: grid;
+    gap: 6px;
+    min-width: 0;
+}
+
+.modal label {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+/* Inputs: make them obey container width (prevents “tiny pill input” issue) */
+.modal input {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    border-radius: 14px;
+    border: 1px solid var(--line);
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text);
+    padding: 12px 12px;
+    outline: none;
+}
+
+/* Buttons in modal */
 .modal button {
     max-width: 100%;
 }
 
+/* Two-column field row (use this instead of flex row for inputs) */
 .fieldRow {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 10px;
+}
+
+/* Prevent grid children from overflowing */
+.fieldRow>.field {
+    min-width: 0;
 }
 
 @media (max-width: 360px) {
@@ -234,36 +296,64 @@ body.noScroll {
         grid-template-columns: 1fr;
     }
 }
-.field+.fieldRow {
-    margin-top: 10px;
+
+/* Footer actions (if you use it) */
+.modalActions {
+    display: flex;
+    gap: 10px;
+    padding: 14px;
+    border-top: 1px solid var(--line);
 }
 
-/* FieldRow overflow fix (grid children can overflow without this) */
-.fieldRow>.field {
-    min-width: 0;
+/* Logged sets list (Exercise Focus modal) */
+.fxList {
+    display: grid;
+    gap: 10px;
 }
 
-/* Make inputs obey their column width */
-.fieldRow input {
-    width: 100%;
-    min-width: 0;
-}
-.modalHeader {
+.fxSetRow {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 14px 14px;
-    border-bottom: 1px solid var(--line);
-}
+    gap: 12px;
 
-.modalTitle {
-    font-weight: 800;
-}
-
-.field {
-    display: grid;
-    gap: 6px;
+    width: 100%;
     min-width: 0;
+    padding: 12px;
+
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: rgba(0, 0, 0, 0.18);
+}
+
+.fxSetLeft {
+    min-width: 0;
+}
+
+.fxMain {
+    font-weight: 800;
+    line-height: 1.1;
+}
+
+.fxSub {
+    margin-top: 4px;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+/* Small "x" delete button */
+.fxDel {
+    flex: 0 0 auto;
+    width: 36px;
+    height: 36px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text);
+    font-size: 18px;
+    line-height: 0;
+    display: grid;
+    place-items: center;
 }
 
 label {
@@ -280,12 +370,7 @@ input {
     outline: none;
 }
 
-.modalActions {
-    display: flex;
-    gap: 10px;
-    padding: 14px;
-    border-top: 1px solid var(--line);
-}
+
 
 .btn {
     flex: 1;
@@ -400,4 +485,28 @@ button:disabled {
     padding: 12px;
 }
 
+/* --- Hard stop horizontal layout blowouts (recommended) --- */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
 
+/* Prevent any page-level sideways scroll (helps on mobile + devtools) */
+html,
+body {
+    overflow-x: hidden;
+}
+
+
+/* Pills/buttons often cause overflow if they refuse to wrap */
+.pill,
+.btn {
+    max-width: 100%;
+}
+
+/* If any pill text is long, allow wrapping instead of pushing width */
+.pill {
+    white-space: normal;
+    overflow-wrap: anywhere;
+}

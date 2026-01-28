@@ -10,6 +10,7 @@ import {
   setTodayOverride,
   setWeeklyGoal,
   clearTodayOverride,
+  deleteSet,
   setSelectedExercise
 } from "./state/actions.js";
 
@@ -233,19 +234,21 @@ function render() {
     return;
   }
 
-  if (modal.type === MODAL_EXERCISE_FOCUS) {
-    const exId = modal.payload?.exerciseId || "";
-    const summary = selectTodayExerciseSummary(state, exId);
+if (modal.type === MODAL_EXERCISE_FOCUS) {
+  const exId = modal.payload?.exerciseId || "";
+  const summary = selectTodayExerciseSummary(state, exId);
+  const rows = selectSetsForTodayExercise(state, exId); // ✅ ADD THIS
 
-    renderModalRoot(
-      els.modalRoot,
-      exerciseFocusHtml(modal.payload, summary),
-      () => store.dispatch(closeModal())
-    );
+  renderModalRoot(
+    els.modalRoot,
+    exerciseFocusHtml(modal.payload, summary, rows), // ✅ PASS ROWS
+    () => store.dispatch(closeModal())
+  );
 
-    bindExerciseFocusModal(modal.payload);
-    return;
-  }
+  bindExerciseFocusModal(modal.payload);
+  return;
+}
+
 
   if (modal.type === MODAL_LOG_SET) {
     renderModalRoot(
@@ -408,7 +411,20 @@ overlay.querySelector("#btnSaveSet")?.addEventListener("click", () => {
 
 
 }
+function recommendRepsByName(exerciseName = "") {
+  const n = exerciseName.toLowerCase();
 
+  // heavy compounds
+  if (/(deadlift|squat|bench|press|row|rdl|leg press|pull)/.test(n)) return 6;
+
+  // medium compounds / secondary
+  if (/(incline|split squat|pulldown|extension|curl)/.test(n)) return 10;
+
+  // accessories
+  if (/(lateral|raise|calf|tricep|bicep|fly|rear delt)/.test(n)) return 12;
+
+  return 8;
+}
 function bindExerciseFocusModal(payload) {
   const overlay = els.modalRoot.firstElementChild;
   if (!overlay) return;
@@ -419,101 +435,113 @@ function bindExerciseFocusModal(payload) {
 
   const exerciseId = payload.exerciseId || "";
   const exerciseName = payload.exercise || "Exercise";
+  const todayId = dayKey(new Date());
 
-  // Render logged list
-  const list = overlay.querySelector("#fxList");
-  const state = store.getState();
-  const items = selectSetsForTodayExercise(state, exerciseId);
+  const stateNow = store.getState();
+  const cap = 5;
 
-  if (list) {
-    list.innerHTML = items.length
-      ? items.map((s) => {
-          const lbs = (Number(s.reps) || 0) * (Number(s.weight) || 0);
-          return `
-            <div class="pill" style="display:flex; justify-content:space-between; gap:10px;">
-              <span>Set ${s.slotIndex || "?"}: ${s.reps} x ${s.weight}</span>
-              <span>${lbs} lbs</span>
-            </div>
-          `;
-        }).join("")
-      : `<div style="color:var(--muted); font-size:12px;">No sets yet. Log your first set 💪</div>`;
+  // Auto-fill from last logged set for this exercise (any day), else fallback recommendation
+  const allSets = Array.isArray(stateNow?.log?.sets) ? stateNow.log.sets : [];
+  const lastForExercise = allSets.find((s) => s.exerciseId === exerciseId);
+  const suggestedReps = Number(lastForExercise?.reps) || recommendRepsByName(exerciseName);
+  const suggestedWeight = Number(lastForExercise?.weight) || "";
+
+  const inReps = overlay.querySelector("#fxReps");
+  const inWeight = overlay.querySelector("#fxWeight");
+  const btnLog = overlay.querySelector("#fxLogBtn");
+  const btnClear = overlay.querySelector("#fxClearInputs");
+
+  // Track edit mode (null = normal log mode)
+  let editingId = null;
+
+  function setModeLog() {
+    editingId = null;
+    if (btnLog) btnLog.textContent = "Log Set";
   }
 
-  // Add Set (increase slots up to 5)
-  overlay.querySelector("#fxAddSet")?.addEventListener("click", () => {
-    const nextSlots = Math.min(5, Number(payload.slots || 3) + 1);
-    store.dispatch(openModal(MODAL_EXERCISE_FOCUS, { ...payload, slots: nextSlots }));
+  function setModeEdit(id) {
+    editingId = id;
+    if (btnLog) btnLog.textContent = "Update Set";
+  }
+
+  // Prefill inputs (only if empty)
+  if (inReps && !inReps.value) inReps.value = String(suggestedReps);
+  if (inWeight && !inWeight.value && suggestedWeight !== "") inWeight.value = String(suggestedWeight);
+
+  btnClear?.addEventListener("click", () => {
+    setModeLog();
+    if (inReps) inReps.value = String(recommendRepsByName(exerciseName));
+    if (inWeight) inWeight.value = "";
   });
 
-  // Row buttons: Log / Edit / Clear
-  overlay.querySelectorAll("[data-action]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const action = btn.getAttribute("data-action");
-      const slot = Number(btn.getAttribute("data-slot") || 0);
-      if (!slot) return;
+  // ✅ SINGLE click handler for btnLog (no addEventListener + onclick mix)
+  btnLog?.addEventListener("click", () => {
+    const cur = store.getState();
+    const rowsToday = selectSetsForTodayExercise(cur, exerciseId);
 
-      const repsEl = overlay.querySelector(`#fxReps_${slot}`);
-      const weightEl = overlay.querySelector(`#fxWeight_${slot}`);
+    const reps = Number(inReps?.value || 0);
+    const weight = Number(inWeight?.value || 0);
 
-      const existing = items.find((s) => Number(s.slotIndex) === slot);
+    if (!reps || !weight) {
+      toast("Enter reps + weight");
+      return;
+    }
 
-      if (action === "clear") {
-        if (repsEl) repsEl.value = "";
-        if (weightEl) weightEl.value = "";
-        return;
-      }
+    // If we're NOT editing, enforce cap
+    if (!editingId && rowsToday.length >= cap) {
+      toast("5-set cap reached");
+      return;
+    }
 
-      if (action === "edit") {
-        // unlock inputs for that slot
-        if (repsEl) repsEl.disabled = false;
-        if (weightEl) weightEl.disabled = false;
+    if (editingId) {
+      // UPDATE existing set
+      store.dispatch(updateSet(editingId, { reps, weight, ts: Date.now() }));
+      toast("Set updated");
+      haptic("light");
+      setModeLog();
+    } else {
+      // ADD new set
+      const splitName = els.todaysSplit?.getAttribute("data-split-name") || "Session";
+      const origin = els.todaysSplit?.getAttribute("data-origin") || "custom";
 
-        // also re-enable the Log button for that slot by re-opening modal with same payload
-        store.dispatch(openModal(MODAL_EXERCISE_FOCUS, { ...payload }));
-        return;
-      }
+      store.dispatch(addSet({
+        id: crypto.randomUUID(),
+        ts: Date.now(),
+        dayId: todayId,
+        weekId: getWeekId(new Date()),
+        splitName,
+        origin,
+        exerciseId,
+        exercise: exerciseName,
+        reps,
+        weight,
+      }));
 
-      if (action === "log") {
-        const reps = Number(repsEl?.value || 0);
-        const weight = Number(weightEl?.value || 0);
+      toast("Set logged");
+      haptic("light");
+    }
 
-        if (!reps || !weight) {
-          toast("Enter reps + weight");
-          return;
-        }
+    // Refresh modal
+    store.dispatch(openModal(MODAL_EXERCISE_FOCUS, payload));
+  });
 
-        const splitName = els.todaysSplit?.getAttribute("data-split-name") || "Session";
-        const origin = els.todaysSplit?.getAttribute("data-origin") || "custom";
 
-        if (existing) {
-          store.dispatch(updateSet(existing.id, { reps, weight, ts: Date.now() }));
-          toast(`Updated Set ${slot}`);
-        } else {
-          store.dispatch(addSet({
-            id: crypto.randomUUID(),
-            ts: Date.now(),
-            dayId: dayKey(new Date()),
-            weekId: getWeekId(new Date()),
-            splitName,
-            origin,
-            exerciseId,
-            exercise: exerciseName,
-            reps,
-            weight,
-            slotIndex: slot,
-          }));
-          toast(`Logged Set ${slot}`);
-        }
 
-        haptic("light");
-
-        // Keep focus modal open & refreshed
-        store.dispatch(openModal(MODAL_EXERCISE_FOCUS, { ...payload }));
-      }
+  // DELETE
+  overlay.querySelectorAll("[data-del-id]").forEach((b) => {
+    b.addEventListener("click", () => {
+      const id = b.getAttribute("data-del-id");
+      if (!id) return;
+      store.dispatch(deleteSet(id));
+      toast("Set deleted");
+      haptic("light");
+      // if we deleted the thing we're editing, exit edit mode
+      if (editingId === id) setModeLog();
+      store.dispatch(openModal(MODAL_EXERCISE_FOCUS, payload));
     });
   });
 
-  // Rest timer
+  // Rest timer (same as your existing one)
   const display = overlay.querySelector("#fxTimerDisplay");
   const btnStart = overlay.querySelector("#fxTimerStart");
   const btnReset = overlay.querySelector("#fxTimerReset");
@@ -548,18 +576,14 @@ function bindExerciseFocusModal(payload) {
         stop();
         remaining = 0;
         renderTime();
-        beep();              // ✅ audio cue
-        haptic("success");   // ✅ haptic cue
+        beep();
+        haptic("success");
         toast("Rest done 💪");
       }
     }, 1000);
   };
 
-  btnStart?.addEventListener("click", () => {
-    if (!running) start();
-    else stop();
-  });
-
+  btnStart?.addEventListener("click", () => (!running ? start() : stop()));
   btnReset?.addEventListener("click", () => {
     stop();
     remaining = total;

@@ -2,40 +2,58 @@ export const MODAL_EXERCISE_FOCUS = "EXERCISE_FOCUS";
 
 export function exerciseFocusHtml(payload = {}, summary = {}, rows = []) {
   const name = payload.exercise || "Exercise";
-  const slots = clampSlots(payload.slots ?? 3);
+  const sets = Number(summary.setsCount || 0);
+  const totalLbs = Number(summary.totalLbs || 0);
 
-  const setsCount = summary.setsCount || 0;
-  const totalLbs = summary.totalLbs || 0;
+  const goal = 3;
+  const cap = 5;
+  const goalDone = sets >= goal;
+  const capped = sets >= cap;
 
   return `
     <div class="modal" role="dialog" aria-modal="true">
       <div class="modalHeader">
         <div class="modalTitle">${escapeHtml(name)}</div>
-        <button class="iconBtn" data-close>✕</button>
+        <button class="iconBtn" data-close aria-label="Close">✕</button>
       </div>
 
       <div class="modalBody">
         <div style="color:var(--muted); font-size:12px; margin-bottom:10px;">
-          Log sets here (3 → up to 5). Each set locks when logged.
+          Log sets for this exercise (${goal}–${cap})
         </div>
 
-        <div class="row" style="margin-bottom:12px;">
-          <div class="pill">${setsCount} sets today</div>
-          <div class="pill">${totalLbs} lbs</div>
+        <div class="row" style="margin-bottom:10px; gap:10px; flex-wrap:wrap;">
+          <div class="pill">Sets today: <b>${sets}</b> / ${goal}${goalDone ? " ✅" : ""}</div>
+          <div class="pill"><b>${totalLbs}</b> lbs logged</div>
         </div>
 
-        <!-- Set Rows -->
-        <div id="fxRows" style="display:grid; gap:10px;">
-          ${renderRows(slots, rows)}
+        <div class="card" style="padding:12px;">
+          <div style="font-weight:800; margin-bottom:8px;">Quick logger</div>
+
+          <div class="fieldRow">
+            <div class="field">
+              <label>Reps</label>
+              <input id="fxReps" inputmode="numeric" placeholder="8" ${capped ? "disabled" : ""}/>
+            </div>
+            <div class="field">
+              <label>Weight</label>
+              <input id="fxWeight" inputmode="numeric" placeholder="135" ${capped ? "disabled" : ""}/>
+            </div>
+          </div>
+
+          <div style="display:flex; gap:10px; margin-top:10px;">
+            <button class="btn btnPrimary" id="fxLogBtn" ${capped ? "disabled" : ""}>
+              ${capped ? "Cap reached" : "Log Set"}
+            </button>
+            <button class="btn" id="fxClearInputs" ${capped ? "disabled" : ""}>Clear</button>
+          </div>
+
+          <div id="fxHint" style="margin-top:8px; color:var(--muted); font-size:12px;">
+            ${capped ? "Max sets done" : "Tip: 3 sets = Goal / 5 sets Max"}
+          </div>
         </div>
 
-        <div style="display:flex; gap:10px; margin-top:12px;">
-          <button class="btn" data-close>Close</button>
-          <button class="btn" id="fxAddSet" ${slots >= 5 ? "disabled" : ""}>Add Set</button>
-        </div>
-
-        <!-- Rest Timer -->
-        <div class="card" style="padding:12px; margin-top:14px;">
+        <div class="card" style="padding:12px; margin-top:10px;">
           <div class="row">
             <div>
               <div style="font-weight:800;">Rest Timer</div>
@@ -51,63 +69,39 @@ export function exerciseFocusHtml(payload = {}, summary = {}, rows = []) {
         </div>
 
         <div style="margin-top:14px; border-top:1px solid var(--line); padding-top:12px;">
-          <div style="font-weight:800; margin-bottom:8px;">Logged sets</div>
-          <div id="fxList" style="display:grid; gap:8px;"></div>
+          <div class="row" style="align-items:flex-end;">
+            <div style="font-weight:800;">Logged sets</div>
+          </div>
+
+          <div id="fxList" class="fxList">
+            ${
+              rows.length
+                ? rows.map((s) => {
+                    const lbs = (Number(s.reps) || 0) * (Number(s.weight) || 0);
+                    return `
+                      <div class="fxSetRow">
+                        <div class="fxSetLeft">
+                          <div class="fxMain"><b>${escapeHtml(s.reps)}</b> × <b>${escapeHtml(s.weight)}</b></div>
+                          <div class="fxSub">${lbs} lbs</div>
+                        </div>
+                        <button class="fxDel" data-del-id="${escapeHtml(s.id)}" aria-label="Delete set">x</button>
+                      </div>
+                    `;
+                  }).join("")
+                : `<div style="color:var(--muted); font-size:12px;">No sets yet. Log your first set 💪</div>`
+            }
+          </div>
+        </div>
+
+        <div style="margin-top:12px;">
+          <button class="btn" data-close style="width:100%;">Close</button>
         </div>
       </div>
     </div>
   `;
 }
 
-function renderRows(slots, rows) {
-  // rows is an array of logged sets sorted by slotIndex
-  const bySlot = new Map();
-  rows.forEach((s) => bySlot.set(Number(s.slotIndex || 0), s));
 
-  let html = "";
-  for (let i = 1; i <= slots; i++) {
-    const existing = bySlot.get(i);
-    const done = !!existing;
-
-    html += `
-      <div class="card" style="padding:12px;">
-        <div class="row" style="margin-bottom:8px;">
-          <div style="font-weight:800;">Set ${i}</div>
-          ${done ? `<div class="pill">Done ✅</div>` : `<div class="pill">Pending</div>`}
-        </div>
-
-        <div class="row" style="gap:10px;">
-          <div class="field" style="flex:1;">
-            <label>Reps</label>
-            <input id="fxReps_${i}" inputmode="numeric" placeholder="8" value="${done ? escapeHtml(existing.reps) : ""}" ${done ? "disabled" : ""}/>
-          </div>
-
-          <div class="field" style="flex:1;">
-            <label>Weight</label>
-            <input id="fxWeight_${i}" inputmode="numeric" placeholder="135" value="${done ? escapeHtml(existing.weight) : ""}" ${done ? "disabled" : ""}/>
-          </div>
-        </div>
-
-        <div style="display:flex; gap:10px; margin-top:10px;">
-          <button class="btn btnPrimary" data-slot="${i}" data-action="log" ${done ? "disabled" : ""}>
-            Log
-          </button>
-          ${
-            done
-              ? `<button class="btn" data-slot="${i}" data-action="edit">Edit</button>`
-              : `<button class="btn" data-slot="${i}" data-action="clear">Clear</button>`
-          }
-        </div>
-      </div>
-    `;
-  }
-  return html;
-}
-
-function clampSlots(n) {
-  const x = Number(n) || 3;
-  return Math.max(3, Math.min(5, x));
-}
 
 function escapeHtml(s) {
   return String(s ?? "")

@@ -12,6 +12,7 @@ import {
   ENSURE_CURRENT_WEEK,
   SET_SELECTED_EXERCISE,
   SET_TODAY_OVERRIDE,
+  DELETE_SET,
   CLEAR_TODAY_OVERRIDE
   } from "./actions.js";
 
@@ -80,6 +81,15 @@ case SET_TODAY_OVERRIDE: {
     },
   };
 }
+
+case DELETE_SET: {
+  const sets = Array.isArray(state.log.sets) ? state.log.sets : [];
+  return {
+    ...state,
+    log: { ...state.log, sets: sets.filter((s) => s.id !== action.id) },
+  };
+}
+
 
 case CLEAR_TODAY_OVERRIDE: {
   const dayId = action.payload?.dayId;

@@ -7,6 +7,12 @@ export const SET_SELECTED_EXERCISE = "SET_SELECTED_EXERCISE";
 export const UPDATE_SET = "UPDATE_SET";
 export const SET_TODAY_OVERRIDE = "SET_TODAY_OVERRIDE";
 export const CLEAR_TODAY_OVERRIDE = "CLEAR_TODAY_OVERRIDE";
+export const DELETE_SET = "DELETE_SET";
+
+export const deleteSet = (id) => ({
+  type: DELETE_SET,
+  id,
+});
 
 export function setTodayOverride(payload) {
   // payload: { dayId, mode: "skip" | "override", splitKey?: string, offset?: number }
