@@ -459,10 +459,6 @@ function bindExerciseFocusModal(payload) {
     if (btnLog) btnLog.textContent = "Log Set";
   }
 
-  function setModeEdit(id) {
-    editingId = id;
-    if (btnLog) btnLog.textContent = "Update Set";
-  }
 
   // Prefill inputs (only if empty)
   if (inReps && !inReps.value) inReps.value = String(suggestedReps);
@@ -541,56 +537,157 @@ function bindExerciseFocusModal(payload) {
     });
   });
 
-  // Rest timer (same as your existing one)
-  const display = overlay.querySelector("#fxTimerDisplay");
-  const btnStart = overlay.querySelector("#fxTimerStart");
-  const btnReset = overlay.querySelector("#fxTimerReset");
+// =====================
+// Rest Timer + Overlay
+// =====================
+const DEFAULT_TOTAL = 120;          // 2 minutes
+const FINISH_HOLD_MS = 1200;        // how long to show "done" before auto-reset
+let total = DEFAULT_TOTAL;
+let remaining = total;
+let running = false;
+let t = null;
 
-  let total = 120;
-  let remaining = total;
-  let running = false;
-  let t = null;
+// Small card timer + buttons
+const displaySmall = overlay.querySelector("#fxTimerDisplay");
+const btnStartSmall = overlay.querySelector("#fxTimerStart");
+const btnResetSmall = overlay.querySelector("#fxTimerReset");
 
-  const renderTime = () => {
-    const mm = String(Math.floor(remaining / 60)).padStart(2, "0");
-    const ss = String(remaining % 60).padStart(2, "0");
-    if (display) display.textContent = `${mm}:${ss}`;
-  };
+// Overlay elements
+const overlayEl = overlay.querySelector("#fxTimerOverlay");
+const bigDisplay = overlay.querySelector("#fxTimerBig");
+const hint = overlay.querySelector("#fxTimerHint");
+const btnOverlayClose = overlay.querySelector("#fxTimerOverlayClose");
+const btnOverlayToggle = overlay.querySelector("#fxTimerOverlayToggle");
+const btnOverlayReset = overlay.querySelector("#fxTimerOverlayReset");
 
-  const stop = () => {
-    running = false;
-    if (t) clearInterval(t);
-    t = null;
-    if (btnStart) btnStart.textContent = "Start";
-  };
+// Utility: format seconds
+const fmt = (secs) => {
+  const mm = String(Math.floor(secs / 60)).padStart(2, "0");
+  const ss = String(secs % 60).padStart(2, "0");
+  return `${mm}:${ss}`;
+};
 
-  const start = () => {
-    if (running) return;
-    running = true;
-    if (btnStart) btnStart.textContent = "Pause";
+// Render everywhere
+const renderTimer = () => {
+  const txt = fmt(Math.max(0, remaining));
+  if (displaySmall) displaySmall.textContent = txt;
+  if (bigDisplay) bigDisplay.textContent = txt;
 
-    t = setInterval(() => {
-      remaining -= 1;
-      renderTime();
-      if (remaining <= 0) {
-        stop();
-        remaining = 0;
-        renderTime();
-        beep();
-        haptic("success");
-        toast("Rest done 💪");
-      }
-    }, 1000);
-  };
+  const label = running ? "Pause" : "Start";
+  if (btnStartSmall) btnStartSmall.textContent = label;
+  if (btnOverlayToggle) btnOverlayToggle.textContent = label;
 
-  btnStart?.addEventListener("click", () => (!running ? start() : stop()));
-  btnReset?.addEventListener("click", () => {
-    stop();
+  if (hint) {
+    if (remaining <= 0) hint.textContent = "Done ✅";
+    else hint.textContent = running ? "Resting…" : "Tap Start to begin.";
+  }
+};
+
+const stopTimer = () => {
+  running = false;
+  if (t) clearInterval(t);
+  t = null;
+  renderTimer();
+};
+
+const closeOverlay = () => {
+  if (!overlayEl) return;
+
+  // If focus is currently inside overlay, move it out first
+  const active = document.activeElement;
+  if (active && overlayEl.contains(active)) {
+    // send focus to a safe element (the small timer pill or start button)
+    (displaySmall || btnStartSmall || overlay.querySelector("[data-close]"))?.focus?.();
+  }
+
+  overlayEl.classList.add("hidden");
+  overlayEl.setAttribute("aria-hidden", "true");
+};
+
+
+const openOverlay = () => {
+  if (!overlayEl) return;
+  overlayEl.classList.remove("hidden");
+  overlayEl.setAttribute("aria-hidden", "false");
+};
+
+// Finish behavior: beep + glow, then auto reset to 2:00
+const finishTimer = () => {
+  stopTimer();
+  remaining = 0;
+  renderTimer();
+
+  // feedback
+  beep();
+  haptic("success");
+  toast("Rest done 💪");
+
+  // add a CSS class for pulse/glow (you’ll add CSS below)
+  overlayEl?.classList.add("timerDone");
+
+  // auto reset after a short "done" moment
+  setTimeout(() => {
+    overlayEl?.classList.remove("timerDone");
     remaining = total;
-    renderTime();
-  });
+    renderTimer();
 
-  renderTime();
+    // Optional: auto close overlay so you can go log next set
+    closeOverlay();
+  }, FINISH_HOLD_MS);
+};
+
+const startTimer = () => {
+  if (running) return;
+
+  // guard: never start at 0 (prevents instant finish/beep)
+  if (remaining <= 0) remaining = total;
+
+  running = true;
+  renderTimer();
+
+  t = setInterval(() => {
+    remaining -= 1;
+    renderTimer();
+    if (remaining <= 0) finishTimer();
+  }, 1000);
+};
+
+const toggleTimer = () => {
+  if (running) stopTimer();
+  else startTimer();
+};
+
+// Open overlay when tapping the small pill time
+displaySmall?.addEventListener("click", openOverlay);
+
+// Close overlay
+btnOverlayClose?.addEventListener("click", closeOverlay);
+
+// Controls (small + overlay stay in sync)
+btnStartSmall?.addEventListener("click", () => {
+  openOverlay();     // your desired UX: timer "takes over" when used
+  toggleTimer();
+});
+
+btnOverlayToggle?.addEventListener("click", toggleTimer);
+
+const resetTimer = () => {
+  stopTimer();
+  remaining = total;
+  renderTimer();
+};
+
+btnResetSmall?.addEventListener("click", () => {
+  openOverlay();
+  resetTimer();
+});
+
+btnOverlayReset?.addEventListener("click", resetTimer);
+
+// initial render
+renderTimer();
+
+
 }
 
 function simpleAfterburnModalHtml() {

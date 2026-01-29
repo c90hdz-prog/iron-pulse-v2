@@ -49,7 +49,8 @@ export function exerciseFocusHtml(payload = {}, summary = {}, rows = []) {
           </div>
 
           <div id="fxHint" style="margin-top:8px; color:var(--muted); font-size:12px;">
-            ${capped ? "Max sets done" : "Tip: 3 sets = Goal / 5 sets Max"}
+            ${capped ? "Goal complete — great work 💪" : "Tip: 3 sets = Goal / 5 sets Max"}
+
           </div>
         </div>
 
@@ -92,6 +93,24 @@ export function exerciseFocusHtml(payload = {}, summary = {}, rows = []) {
             }
           </div>
         </div>
+        <div id="fxTimerOverlay" class="timerOverlay hidden" aria-hidden="true">
+  <div class="timerSheet">
+    <div class="timerTop">
+      <div class="timerTitle">Rest Timer</div>
+      <button class="iconBtn" id="fxTimerOverlayClose" aria-label="Close">✕</button>
+    </div>
+
+    <div class="timerBig" id="fxTimerBig">02:00</div>
+
+    <div class="timerActions">
+      <button class="btn btnPrimary" id="fxTimerOverlayToggle">Start</button>
+      <button class="btn" id="fxTimerOverlayReset">Reset</button>
+    </div>
+
+    <div class="timerHint" id="fxTimerHint">Tap Start to begin.</div>
+  </div>
+</div>
+
 
         <div style="margin-top:12px;">
           <button class="btn" data-close style="width:100%;">Close</button>
@@ -100,6 +119,7 @@ export function exerciseFocusHtml(payload = {}, summary = {}, rows = []) {
     </div>
   `;
 }
+
 
 
 

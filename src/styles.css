@@ -158,6 +158,206 @@ body.noScroll {
     /* helps on mobile */
 }
 
+/* Focus timer */
+.timerCard{
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(0,0,0,0.18);
+  padding: 14px;
+  margin-bottom: 12px;
+}
+
+.timerTop{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom: 8px;
+}
+
+.timerTitle{
+  font-weight: 900;
+  letter-spacing: 0.2px;
+}
+
+.timerDisplay{
+  text-align:center;
+  font-weight: 900;
+  font-size: 52px;
+  line-height: 1;
+  letter-spacing: 1px;
+  padding: 10px 0 12px;
+}
+
+.timerActions{
+  display:flex;
+  gap:10px;
+  justify-content:center;
+}
+
+.timerStop{
+  opacity: 0.8;
+}
+
+/* While timer is running: make it “center stage” */
+.modal.timerMode .timerCard{
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  box-shadow: 0 18px 50px rgba(0,0,0,0.45);
+  border-color: rgba(255,255,255,0.14);
+}
+
+.modal.timerMode .fxContent{
+  opacity: 0.28;
+  pointer-events: none;
+  filter: blur(0.4px);
+}
+
+/* Timer finished pulse/glow */
+@keyframes timerPulse {
+  0%   { transform: scale(1);   box-shadow: 0 0 0 rgba(255,255,255,0.0); }
+  40%  { transform: scale(1.02); box-shadow: 0 0 40px rgba(255,255,255,0.18); }
+  100% { transform: scale(1);   box-shadow: 0 0 0 rgba(255,255,255,0.0); }
+}
+
+.timerDone{
+  animation: timerPulse 900ms ease-out 2;
+}
+
+/* Logged set row formatting */
+.fxSetRow{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+
+.fxSetLeft{
+  display:flex;
+  flex-direction:column;
+  min-width: 0;
+}
+
+.fxSetSub{
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.fxDelete{
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1;
+  padding: 6px 8px;
+  border-radius: 10px;
+}
+
+.fxDelete:active{
+  transform: scale(0.96);
+}
+/* Fullscreen timer overlay */
+.timerOverlay {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    background: rgba(0, 0, 0, 0.72);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 14px;
+}
+
+.timerOverlay.hidden {
+    display: none;
+}
+
+.timerSheet {
+    width: min(520px, 100%);
+    border-radius: 18px;
+    padding: 14px;
+    background: rgba(18, 18, 22, 0.98);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    box-shadow: 0 18px 60px rgba(0, 0, 0, 0.55);
+}
+
+.timerTop {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--line);
+}
+
+.timerTitle {
+    font-weight: 800;
+}
+
+.timerBig {
+    font-size: 64px;
+    font-weight: 900;
+    letter-spacing: 1px;
+    text-align: center;
+    padding: 18px 0 10px;
+}
+
+.timerActions {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.timerActions .btn {
+    flex: 1;
+}
+
+.timerHint {
+    margin-top: 10px;
+    color: var(--muted);
+    font-size: 12px;
+    text-align: center;
+}
+
+/* Finish pulse */
+.timerDone .timerBig {
+    animation: timerPulse 0.9s ease-in-out infinite;
+}
+
+@keyframes timerPulse {
+    0% {
+        transform: scale(1);
+        filter: drop-shadow(0 0 0 rgba(255, 120, 120, 0));
+    }
+
+    50% {
+        transform: scale(1.03);
+        filter: drop-shadow(0 0 18px rgba(255, 140, 90, 0.45));
+    }
+
+    100% {
+        transform: scale(1);
+        filter: drop-shadow(0 0 0 rgba(255, 120, 120, 0));
+    }
+}
+.timerOverlay.timerDone .timerSheet {
+    animation: timerWinPulse 0.6s ease-in-out 2;
+}
+
+@keyframes timerWinPulse {
+    0% {
+        transform: translateY(0) scale(1);
+    }
+
+    50% {
+        transform: translateY(0) scale(1.02);
+    }
+
+    100% {
+        transform: translateY(0) scale(1);
+    }
+}
 /* Modal */
 
 /* =========================
