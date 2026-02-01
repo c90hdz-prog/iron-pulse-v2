@@ -425,6 +425,7 @@ function recommendRepsByName(exerciseName = "") {
 
   return 8;
 }
+
 function bindExerciseFocusModal(payload) {
   const overlay = els.modalRoot.firstElementChild;
   if (!overlay) return;
@@ -443,7 +444,11 @@ function bindExerciseFocusModal(payload) {
   // Auto-fill from last logged set for this exercise (any day), else fallback recommendation
   const allSets = Array.isArray(stateNow?.log?.sets) ? stateNow.log.sets : [];
   const lastForExercise = allSets.find((s) => s.exerciseId === exerciseId);
-  const suggestedReps = Number(lastForExercise?.reps) || recommendRepsByName(exerciseName);
+  const suggestedReps =
+  Number(lastForExercise?.reps) ||
+  Number(payload?.suggestedReps) ||
+  recommendRepsByName(exerciseName);
+
   const suggestedWeight = Number(lastForExercise?.weight) || "";
 
   const inReps = overlay.querySelector("#fxReps");

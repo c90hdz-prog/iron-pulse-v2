@@ -7,7 +7,7 @@ export function renderTodaysSplit(el, state) {
 
 
 const todayOverride = state?.program?.todayOverride;
-const overrideToday = todayOverride?.dayId === todayId ? todayOverride : null;
+
 
 const plan = getRecommendedPlan({
   weeklyGoal: state?.goals?.weeklyGoal ?? 2,
@@ -46,21 +46,23 @@ const plan = getRecommendedPlan({
     </div>
 
     <div style="margin-top:10px; display:grid; gap:8px;">
-      ${plan.exercises.slice(0, 4).map((ex) => {
+      ${plan.exercises.slice(0, 5).map((ex) => {
         const active = selected?.id === ex.id;
         return `
           <button
             class="pill pillSelectable ${active ? "active" : ""}"
             data-ex="${ex.name}"
             data-exid="${ex.id}"
+            data-sreps="${ex.suggestedReps ?? ""}"
             style="text-align:left;"
           >
             ${ex.name}
           </button>
+
         `;
       }).join("")}
 
-      ${plan.exercises.length > 4
+      ${plan.exercises.length > 5
         ? `<div style="color:var(--muted); font-size:12px;">+ ${plan.exercises.length - 4} more</div>`
         : ""}
     </div>
@@ -97,24 +99,30 @@ const plan = getRecommendedPlan({
   `;
 
   // Pills: dispatch a single event; main.js will set selected + open modal
-  el.querySelectorAll("[data-ex]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const exName = btn.getAttribute("data-ex") || "Exercise";
-      const exId = btn.getAttribute("data-exid") || "";
+el.querySelectorAll("[data-ex]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const exName = btn.getAttribute("data-ex") || "Exercise";
+    const exId = btn.getAttribute("data-exid") || "";
+    const suggestedReps = Number(btn.getAttribute("data-sreps") || 0) || null;
 
-      // Persist selection on the card element (survives re-render)
-      el.setAttribute("data-selected-ex", exName);
-      el.setAttribute("data-selected-exid", exId);
+    el.setAttribute("data-selected-ex", exName);
+    el.setAttribute("data-selected-exid", exId);
 
-      // Fire event (optional for later focus modal)
-      el.dispatchEvent(
-        new CustomEvent("ip:focusExercise", {
-          bubbles: true,
-          detail: { exercise: exName, exerciseId: exId, origin: "recommended" },
-        })
-      );
-    });
+    el.dispatchEvent(
+      new CustomEvent("ip:focusExercise", {
+        bubbles: true,
+        detail: {
+          exercise: exName,
+          exerciseId: exId,
+          origin: "recommended",
+          suggestedReps,
+        },
+      })
+    );
   });
+});
+
+
   el.querySelector("#btnLogSelectedSet")?.addEventListener("click", () => {
     if (!selected?.id || !selected?.name) return;
 
