@@ -66,7 +66,10 @@ export function exerciseFocusHtml(payload = {}, summary = {}) {
   const lbs = summary.totalLbs || 0;
 
   return `
-    <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal" role="dialog" aria-modal="true"
+      data-exid="${escapeHtml(payload.exerciseId || "")}"
+      data-dayid="${escapeHtml(payload.dayId || "")}">
+
       <div class="modalHeader">
         <div class="modalTitle">${escapeHtml(name)}</div>
         <button class="iconBtn" data-close>✕</button>
@@ -95,8 +98,10 @@ export function exerciseFocusHtml(payload = {}, summary = {}) {
 
         <div style="margin-top:12px; display:flex; gap:10px;">
           <button class="btn" data-close>Close</button>
+          <button class="btn" id="fxComplete">Complete</button>
           <button class="btn btnPrimary" id="fxSave">Save Set</button>
         </div>
+
 
         <div style="margin-top:14px; border-top:1px solid var(--line); padding-top:12px;">
           <div style="font-weight:800; margin-bottom:8px;">Logged sets</div>

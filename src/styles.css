@@ -710,3 +710,192 @@ body {
     white-space: normal;
     overflow-wrap: anywhere;
 }
+.todayCard {
+    border: 1px solid var(--line);
+    border-radius: 22px;
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.todayHeader {
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    align-items: flex-start;
+    margin-bottom: 12px;
+}
+
+.todayTitle {
+    font-size: 22px;
+    font-weight: 900;
+    letter-spacing: 0.2px;
+}
+
+.todayDesc {
+    margin-top: 6px;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.35;
+}
+
+.todayList {
+    display: grid;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.todayRow {
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 14px;
+    background: rgba(255, 255, 255, 0.02);
+    transition: transform 0.08s ease, border-color 0.08s ease;
+}
+
+.todayRow:active {
+    transform: scale(0.99);
+}
+
+.todayRow.active {
+    border-color: rgba(255, 255, 255, 0.20);
+}
+
+.rowTop {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+
+.rowName {
+    font-weight: 900;
+    font-size: 16px;
+}
+
+.rowChevron {
+    font-size: 22px;
+    opacity: 0.75;
+    margin-left: 8px;
+}
+
+.rowLink {
+    margin-top: 6px;
+    font-size: 13px;
+    text-decoration: underline;
+    opacity: 0.95;
+}
+
+.rowBottom {
+    margin-top: 10px;
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 13px;
+}
+
+.rowMin {
+    color: var(--muted);
+}
+
+.rowLbs {
+    font-weight: 800;
+    color: var(--accentWarmStart, #f7c04a);
+    /* fallback if you don't have it */
+}
+/* ===== Completed states ===== */
+.exItem {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.exLeft {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.exName {
+    font-weight: 800;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.exMeta {
+    display: flex;
+    gap: 10px;
+    font-size: 12px;
+    color: var(--muted);
+}
+
+.exRight {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.exCheck {
+    width: 22px;
+    height: 22px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    display: grid;
+    place-items: center;
+    font-size: 12px;
+    opacity: 0.85;
+}
+
+/* Completed exercise look */
+.pillSelectable.isDone {
+    opacity: 0.55;
+    filter: saturate(0.75);
+}
+
+.pillSelectable.isDone .exName {
+    opacity: 0.85;
+}
+
+.pillSelectable.isDone .exCheck {
+    opacity: 1;
+}
+
+/* Completed split card look */
+.splitCard.isAllDone {
+    opacity: 0.85;
+    filter: saturate(0.85);
+}
+
+.splitCard.isAllDone h3,
+.splitCard.isAllDone .big {
+    opacity: 0.9;
+}
+/* Exercise row states */
+
+.todayRow.done {
+    opacity: 0.55;
+    filter: saturate(0.8);
+}
+
+.todayRow.done .rowName {
+    text-decoration: line-through;
+    text-decoration-thickness: 2px;
+    text-decoration-color: rgba(255, 255, 255, 0.35);
+}
+
+.todayRow.done .rowLink {
+    opacity: 0.7;
+}
+
+.todayRow.done .rowChevron {
+    font-weight: 900;
+    opacity: 0.95;
+}
+
+/* Whole card when ALL exercises complete */
+.todayCard.allDone {
+    opacity: 0.9;
+    filter: saturate(0.85);
+}

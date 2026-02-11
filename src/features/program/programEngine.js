@@ -16,7 +16,7 @@ function getPool(weeklyGoal) {
 /**
  * overrideToday: { dayId, mode: "skip" | "override", offset?: number }
  */
-export function getRecommendedPlan({ weeklyGoal, date, overrideToday }) {
+export function getRecommendedPlan({ weeklyGoal, date, overrideToday, swapOverrides }) {
   const pool = getPool(weeklyGoal);
   const todayId = dayKey(date);
 
@@ -33,9 +33,11 @@ export function getRecommendedPlan({ weeklyGoal, date, overrideToday }) {
   }
 
   const rawPlan = pool[idx] || pool[baseIdx];
+    // Apply exercise overrides by split + slot (future-proof for swaps)
+  const overridden = applySwapOverrides(rawPlan.exercises || [], rawPlan.splitName, swapOverrides);
 
   // normalize exercises -> {id,name,helper,suggestedReps}
-  const exercises = (rawPlan.exercises || []).map((item) => {
+  const exercises = (overridden || []).map((item) => {
     // SPLITS should use catalog ids like ex("bench_press") returns an object
     if (item && typeof item === "object") {
       return {
@@ -45,6 +47,13 @@ export function getRecommendedPlan({ weeklyGoal, date, overrideToday }) {
         suggestedReps: item.suggestedReps ?? null,
       };
     }
+
+    // swapOverrides[splitName][slotIndex] = "exercise_id"
+    const swapOverrides = {
+      push: { 1: "chest_fly", 4: "triceps_extension" },
+      legs: { 3: "leg_extension" },
+    };
+
 
     // fallback if strings ever slip in
     const e = ex(item);
@@ -62,6 +71,32 @@ export function getRecommendedPlan({ weeklyGoal, date, overrideToday }) {
     exercises,
   };
 }
+
+
+function applySwapOverrides(exercises, splitName, swapOverrides) {
+  if (!swapOverrides || !splitName) return exercises;
+
+  const bySplit = swapOverrides[splitName];
+  if (!bySplit) return exercises;
+
+  // Return new array so we don't mutate the original
+  const out = exercises.slice();
+
+  for (const [slotStr, newId] of Object.entries(bySplit)) {
+    const slot = Number(slotStr);
+    if (!Number.isFinite(slot)) continue;
+    if (slot < 0 || slot >= out.length) continue;
+
+    if (typeof newId !== "string" || !newId.trim()) continue;
+
+    // Replace with canonical catalog object
+    out[slot] = ex(newId.trim());
+  }
+
+  return out;
+}
+
+
 
 /**
  * IMPORTANT:
