@@ -1,3 +1,4 @@
+// src/state/reducer.js
 import { getWeekId } from "./time.js";
 import { dayKey } from "./date.js";
 
@@ -6,55 +7,101 @@ import {
   CLOSE_MODAL,
   ADD_SET,
   UPDATE_SET,
+  DELETE_SET,
   SET_WEEKLY_GOAL,
   RESET_WEEK,
   COMPLETE_SESSION,
   ENSURE_CURRENT_WEEK,
   SET_SELECTED_EXERCISE,
   SET_TODAY_OVERRIDE,
-  DELETE_SET,
-  CLEAR_TODAY_OVERRIDE
-  } from "./actions.js";
+  CLEAR_TODAY_OVERRIDE,
 
+  // swaps
+  SET_EXERCISE_SWAP,
+  CLEAR_EXERCISE_SWAPS_FOR_DAY,
+  CLEAR_EXERCISE_SWAP,
+} from "./actions.js";
 
 export const initialState = {
   ui: {
-  modal: { open: false, type: null, payload: {} },
-  selectedExercise: { id: null, name: null },
-},
+    modal: { open: false, type: null, payload: {} },
+    selectedExercise: { id: null, name: null },
+  },
 
   goals: {
     weeklyGoal: 2,
   },
+
   log: {
-    sets: [], // { id, ts, exercise, reps, weight }
-    sessions: [], // later: { id, ts, splitName }
+    sets: [], // { id, ts, exerciseId, exercise, reps, weight, dayId, weekId, ... }
+    sessions: [], // { id, ts, splitName, weekId }
   },
+
   streak: {
     weekId: getWeekId(),
-    sessionsThisWeek: 0, // will compute later from sessions/log events
+    sessionsThisWeek: 0,
     streakWeeks: 0,
     lastSessionDay: null,
   },
-  program: {
-  todayOverride: null, // { dayId, mode, splitKey?, offset? }
-},
 
+  program: {
+    todayOverride: null, // { dayId, mode, offset? }
+
+    // exerciseSwapsByDay[dayId][splitName][slotIndex1Based] = "exercise_catalog_id"
+    exerciseSwapsByDay: {},
+  },
 };
 
 export function reducer(state, action) {
   switch (action.type) {
     case OPEN_MODAL:
-      return { ...state, ui: { ...state.ui, modal: { open: true, type: action.modalType, payload: action.payload } } };
+      return {
+        ...state,
+        ui: {
+          ...state.ui,
+          modal: { open: true, type: action.modalType, payload: action.payload },
+        },
+      };
 
     case CLOSE_MODAL:
-      return { ...state, ui: { ...state.ui, modal: { open: false, type: null, payload: {} } } };
+      return {
+        ...state,
+        ui: {
+          ...state.ui,
+          modal: { open: false, type: null, payload: {} },
+        },
+      };
 
     case ADD_SET:
-      return { ...state, log: { ...state.log, sets: [action.entry, ...state.log.sets] } };
+      return {
+        ...state,
+        log: { ...state.log, sets: [action.entry, ...state.log.sets] },
+      };
+
+    case UPDATE_SET: {
+      const sets = Array.isArray(state.log.sets) ? state.log.sets : [];
+      return {
+        ...state,
+        log: {
+          ...state.log,
+          sets: sets.map((s) => (s.id === action.id ? { ...s, ...action.patch } : s)),
+        },
+      };
+    }
+
+    case DELETE_SET: {
+      const sets = Array.isArray(state.log.sets) ? state.log.sets : [];
+      return {
+        ...state,
+        log: { ...state.log, sets: sets.filter((s) => s.id !== action.id) },
+      };
+    }
 
     case SET_WEEKLY_GOAL:
-      return { ...state, goals: { ...state.goals, weeklyGoal: Math.max(1, Number(action.goal) || 2) } };
+      return {
+        ...state,
+        goals: { ...state.goals, weeklyGoal: Math.max(1, Number(action.goal) || 2) },
+      };
 
     case RESET_WEEK: {
       const weekId = state.streak.weekId;
@@ -62,7 +109,7 @@ export function reducer(state, action) {
         ...state,
         log: {
           ...state.log,
-          sessions: (state.log.sessions || []).filter(s => s.weekId !== weekId),
+          sessions: (state.log.sessions || []).filter((s) => s.weekId !== weekId),
         },
         streak: {
           ...state.streak,
@@ -71,48 +118,123 @@ export function reducer(state, action) {
       };
     }
 
-case SET_TODAY_OVERRIDE: {
-  const o = action.payload || null;
-  return {
-    ...state,
-    program: {
-      ...state.program,
-      todayOverride: o,
-    },
-  };
-}
+    case SET_TODAY_OVERRIDE: {
+      const o = action.payload || null;
+      return {
+        ...state,
+        program: {
+          ...state.program,
+          todayOverride: o,
+        },
+      };
+    }
 
-case DELETE_SET: {
-  const sets = Array.isArray(state.log.sets) ? state.log.sets : [];
-  return {
-    ...state,
-    log: { ...state.log, sets: sets.filter((s) => s.id !== action.id) },
-  };
-}
+    case CLEAR_TODAY_OVERRIDE: {
+      const dayId = action.payload?.dayId;
+      const cur = state.program?.todayOverride;
+      const keep = cur && dayId && cur.dayId !== dayId ? cur : null;
+      return {
+        ...state,
+        program: {
+          ...state.program,
+          todayOverride: keep,
+        },
+      };
+    }
 
+    // ===========================
+    // Swap Overrides Reducers
+    // ===========================
+    case SET_EXERCISE_SWAP: {
+      const p = action.payload || {};
+      const dayId = p.dayId;
+      const splitName = p.splitName;
+      const slot = Number(p.slot); // 1-based
+      const exerciseId = String(p.exerciseId || "").trim();
 
-case CLEAR_TODAY_OVERRIDE: {
-  const dayId = action.payload?.dayId;
-  const cur = state.program?.todayOverride;
-  const keep = cur && dayId && cur.dayId !== dayId ? cur : null;
-  return {
-    ...state,
-    program: {
-      ...state.program,
-      todayOverride: keep,
-    },
-  };
-}
+      if (!dayId || !splitName || !Number.isFinite(slot) || slot < 1) return state;
+      if (!exerciseId) return state;
+
+      const current = state.program?.exerciseSwapsByDay || {};
+      const byDay = current[dayId] || {};
+      const bySplit = byDay[splitName] || {};
+
+      return {
+        ...state,
+        program: {
+          ...state.program,
+          exerciseSwapsByDay: {
+            ...current,
+            [dayId]: {
+              ...byDay,
+              [splitName]: {
+                ...bySplit,
+                [slot]: exerciseId,
+              },
+            },
+          },
+        },
+      };
+    }
+
+    case CLEAR_EXERCISE_SWAPS_FOR_DAY: {
+      const dayId = action.payload?.dayId;
+      if (!dayId) return state;
+
+      const current = state.program?.exerciseSwapsByDay || {};
+      if (!current[dayId]) return state;
+
+      const next = { ...current };
+      delete next[dayId];
+
+      return {
+        ...state,
+        program: {
+          ...state.program,
+          exerciseSwapsByDay: next,
+        },
+      };
+    }
+
+    case CLEAR_EXERCISE_SWAP: {
+      const p = action.payload || {};
+      const dayId = p.dayId;
+      const splitName = p.splitName;
+      const slot = Number(p.slot);
+
+      if (!dayId || !splitName || !Number.isFinite(slot) || slot < 1) return state;
+
+      const current = state.program?.exerciseSwapsByDay || {};
+      const byDay = current[dayId];
+      const bySplit = byDay?.[splitName];
+
+      if (!byDay || !bySplit || !bySplit[slot]) return state;
+
+      const nextSplit = { ...bySplit };
+      delete nextSplit[slot];
+
+      const nextDay = { ...byDay, [splitName]: nextSplit };
+      // if split becomes empty, you *could* delete it, but not required
+
+      return {
+        ...state,
+        program: {
+          ...state.program,
+          exerciseSwapsByDay: {
+            ...current,
+            [dayId]: nextDay,
+          },
+        },
+      };
+    }
 
     case ENSURE_CURRENT_WEEK: {
       const nowWeek = getWeekId(new Date());
       if (nowWeek === state.streak.weekId) return state;
 
-      // Week changed → update streak based on whether last week met goal
       const oldWeekId = state.streak.weekId;
-      const sessionsLastWeek = (state.log.sessions || []).filter(s => s.weekId === oldWeekId).length;
+      const sessionsLastWeek = (state.log.sessions || []).filter((s) => s.weekId === oldWeekId).length;
       const metGoal = sessionsLastWeek >= state.goals.weeklyGoal;
-
 
       return {
         ...state,
@@ -138,24 +260,10 @@ case CLEAR_TODAY_OVERRIDE: {
         },
       };
 
-case UPDATE_SET: {
-  const sets = Array.isArray(state.log.sets) ? state.log.sets : [];
-  return {
-    ...state,
-    log: {
-      ...state.log,
-      sets: sets.map((s) => (s.id === action.id ? { ...s, ...action.patch } : s)),
-    },
-  };
-}
-
-
     case COMPLETE_SESSION: {
-      // Always ensure week is current before applying session
       const nowWeek = getWeekId(new Date());
       const isNewWeek = nowWeek !== state.streak.weekId;
 
-      // If new week, rollover first (same logic as ENSURE_CURRENT_WEEK)
       let nextState = state;
       if (isNewWeek) {
         const metGoal = state.streak.sessionsThisWeek >= state.goals.weeklyGoal;
@@ -172,11 +280,7 @@ case UPDATE_SET: {
       }
 
       const today = dayKey(new Date());
-
-      // Guard: only allow 1 completed session per day
-      if (nextState.streak.lastSessionDay === today) {
-        return nextState;
-      }
+      if (nextState.streak.lastSessionDay === today) return nextState;
 
       const session = {
         id: crypto.randomUUID(),
@@ -195,11 +299,8 @@ case UPDATE_SET: {
           ...nextState.streak,
           lastSessionDay: today,
         },
-
-
       };
     }
-
 
     default:
       return state;

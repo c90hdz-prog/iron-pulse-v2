@@ -45,6 +45,7 @@ export function renderTodaysSplit(el, state) {
     weeklyGoal: state?.goals?.weeklyGoal ?? 2,
     date: new Date(),
     overrideToday: state?.program?.todayOverride ?? null,
+    swapOverrides: state?.program?.exerciseSwapsByDay?.[todayId] ?? null,
   });
 
   el.setAttribute("data-split-name", plan.splitName);

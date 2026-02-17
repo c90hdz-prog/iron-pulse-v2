@@ -30,6 +30,8 @@ body {
         radial-gradient(900px 600px at 90% 20%, rgba(255, 157, 75, 0.10), transparent 55%),
         var(--bg);
     color: var(--text);
+    touch-action: pan-x pan-y;
+    -webkit-text-size-adjust: 100%;
 }
 
 #app {
@@ -473,7 +475,14 @@ body.noScroll {
     padding: 12px 12px;
     outline: none;
 }
-
+button,
+.btn,
+.pill,
+.todayRow,
+.iconBtn {
+    touch-action: manipulation;
+    /* kills double-tap zoom on tap targets */
+}
 /* Buttons in modal */
 .modal button {
     max-width: 100%;
