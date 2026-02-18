@@ -19,14 +19,14 @@ export const COMPLETE_SESSION = "COMPLETE_SESSION";
 export const ENSURE_CURRENT_WEEK = "ENSURE_CURRENT_WEEK";
 
 // ===========================
-// Exercise Swap Overrides
+// Exercise Swap Overrides (Today-only)
 // ===========================
 export const SET_EXERCISE_SWAP = "SET_EXERCISE_SWAP";
 export const CLEAR_EXERCISE_SWAPS_FOR_DAY = "CLEAR_EXERCISE_SWAPS_FOR_DAY";
 export const CLEAR_EXERCISE_SWAP = "CLEAR_EXERCISE_SWAP";
 
 export const setExerciseSwap = (payload) => ({
-  // payload: { dayId, splitName, slot (1-based), exerciseId (catalog id) }
+  // payload: { dayId, splitName, slot (1-based), exerciseId, fromExerciseId }
   type: SET_EXERCISE_SWAP,
   payload,
 });
@@ -43,6 +43,46 @@ export const clearExerciseSwap = (payload) => ({
 });
 
 // ===========================
+// Extras (Unlimited, Today-only)
+// ===========================
+export const ADD_EXTRA_EXERCISE = "ADD_EXTRA_EXERCISE";
+export const REMOVE_EXTRA_EXERCISE = "REMOVE_EXTRA_EXERCISE";
+export const CLEAR_EXTRAS_FOR_DAY = "CLEAR_EXTRAS_FOR_DAY";
+
+export const addExtraExercise = (payload) => ({
+  // payload: { dayId, exerciseId }
+  type: ADD_EXTRA_EXERCISE,
+  payload,
+});
+
+export const removeExtraExercise = (payload) => ({
+  // payload: { dayId, exerciseId }
+  type: REMOVE_EXTRA_EXERCISE,
+  payload,
+});
+
+export const clearExtrasForDay = (dayId) => ({
+  type: CLEAR_EXTRAS_FOR_DAY,
+  payload: { dayId },
+});
+
+// ===========================
+// Edit Mode (Today-only)
+// ===========================
+export const TOGGLE_EDIT_MODE_FOR_DAY = "TOGGLE_EDIT_MODE_FOR_DAY";
+export const CLEAR_EDIT_MODE_FOR_DAY = "CLEAR_EDIT_MODE_FOR_DAY";
+
+export const toggleEditModeForDay = (dayId) => ({
+  type: TOGGLE_EDIT_MODE_FOR_DAY,
+  payload: { dayId },
+});
+
+export const clearEditModeForDay = (dayId) => ({
+  type: CLEAR_EDIT_MODE_FOR_DAY,
+  payload: { dayId },
+});
+
+// ===========================
 // Existing actions
 // ===========================
 export const deleteSet = (id) => ({
@@ -51,7 +91,6 @@ export const deleteSet = (id) => ({
 });
 
 export function setTodayOverride(payload) {
-  // payload: { dayId, mode: "skip" | "override", splitKey?: string, offset?: number }
   return { type: SET_TODAY_OVERRIDE, payload };
 }
 

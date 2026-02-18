@@ -39,11 +39,19 @@ export function selectPersistSubset(state) {
     program: {
       todayOverride: state?.program?.todayOverride ?? null,
 
-      // persist swaps (durable, but we’ll usually clear per day)
       exerciseSwapsByDay:
         state?.program?.exerciseSwapsByDay && typeof state.program.exerciseSwapsByDay === "object"
           ? state.program.exerciseSwapsByDay
           : {},
+
+      extraExercisesByDay:
+        state?.program?.extraExercisesByDay && typeof state.program.extraExercisesByDay === "object"
+          ? state.program.extraExercisesByDay
+          : {},
+
+      // We can persist edit mode, but it’s nicer to NOT persist it (so you don't reopen in edit mode).
+      // We'll store it as empty always.
+      editModeByDay: {},
     },
   };
 }

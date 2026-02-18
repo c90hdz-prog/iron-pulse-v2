@@ -11,7 +11,16 @@ import {
   setWeeklyGoal,
   clearTodayOverride,
   deleteSet,
-  setSelectedExercise
+  setSelectedExercise,
+
+  // swaps + extras + edit mode
+  setExerciseSwap,
+  addExtraExercise,
+  removeExtraExercise,
+  clearExerciseSwapsForDay,
+  clearExtrasForDay,
+  toggleEditModeForDay,
+  clearEditModeForDay,
 } from "./state/actions.js";
 
 import { renderModalRoot } from "./ui/modal.js";
@@ -36,6 +45,9 @@ from "./features/logging/loggingModal.js";
 import { MODAL_EXERCISE_FOCUS, exerciseFocusHtml }
 from "./features/focus/exerciseFocusModal.js";
 
+import { MODAL_EXERCISE_PICKER, exercisePickerHtml }
+from "./features/program/exercisePickerModal.js";
+
 import { renderStreakBanner } from "./features/streak/streakBanner.js";
 import { renderGoalCard } from "./features/goals/goalCard.js";
 import { renderWeeklyVolume } from "./features/volume/volumeCard.js";
@@ -47,7 +59,6 @@ from "./features/afterburn/afterburnModal.js";
 const store = createStore();
 store.dispatch(ensureCurrentWeek());
 
-
 const els = {
   streakBanner: document.getElementById("streakBanner"),
   goalCard: document.getElementById("goalCard"),
@@ -58,12 +69,15 @@ const els = {
   btnCTA: document.getElementById("btnCTA"),
   btnSettings: document.getElementById("btnSettings"),
   todaySummary: document.getElementById("todaySummary"),
-
 };
+
+// -------------------------
+// Today Split Events
+// -------------------------
 
 els.todaysSplit?.addEventListener("ip:focusExercise", (e) => {
   store.dispatch(ensureCurrentWeek());
-  const { exercise, exerciseId } = e.detail || {};
+  const { exercise, exerciseId, suggestedReps } = e.detail || {};
   if (!exerciseId) return;
 
   // Mark origin so logged sets are "recommended"
@@ -73,9 +87,82 @@ els.todaysSplit?.addEventListener("ip:focusExercise", (e) => {
     openModal(MODAL_EXERCISE_FOCUS, {
       exercise: exercise || "Exercise",
       exerciseId,
+      suggestedReps: suggestedReps ?? null,
       slots: 3,
     })
   );
+});
+
+els.todaysSplit?.addEventListener("ip:toggleEditMode", (e) => {
+  const todayId = e.detail?.dayId || dayKey(new Date());
+  store.dispatch(toggleEditModeForDay(todayId));
+  haptic("light");
+});
+
+els.todaysSplit?.addEventListener("ip:swapExercise", (e) => {
+  const { dayId, splitName, slot, fromExerciseId } = e.detail || {};
+  if (!dayId || !splitName || !slot || !fromExerciseId) return;
+
+  // open picker modal
+  store.dispatch(
+    openModal(MODAL_EXERCISE_PICKER, {
+      mode: "swap",
+      dayId,
+      splitName,
+      slot,
+      fromExerciseId,
+      title: "Swap Exercise",
+    })
+  );
+});
+
+els.todaysSplit?.addEventListener("ip:addExtraExercise", (e) => {
+  const dayId = e.detail?.dayId || dayKey(new Date());
+  const splitName = els.todaysSplit?.getAttribute("data-split-name") || "split";
+
+  store.dispatch(
+    openModal(MODAL_EXERCISE_PICKER, {
+      mode: "add",
+      dayId,
+      splitName,
+      title: "Add Exercise",
+    })
+  );
+});
+
+els.todaysSplit?.addEventListener("ip:removeExtraExercise", (e) => {
+  const { dayId, exerciseId } = e.detail || {};
+  if (!dayId || !exerciseId) return;
+
+  // reducer hard-guards if logged
+  store.dispatch(removeExtraExercise({ dayId, exerciseId }));
+  toast("Removed");
+  haptic("light");
+});
+
+// Next option (ONLY cycle button)
+els.todaysSplit?.addEventListener("ip:nextSplit", () => {
+  const todayId = dayKey(new Date());
+  const sets = Array.isArray(store.getState()?.log?.sets) ? store.getState().log.sets : [];
+
+  // Keep your current protection: once anything logged today, don't allow cycling
+  if (sets.some((s) => s?.dayId === todayId)) {
+    toast("Already logged today — split locked ✅");
+    haptic("light");
+    return;
+  }
+
+  const cur = store.getState()?.program?.todayOverride;
+  const curOffset = cur?.dayId === todayId ? Number(cur.offset || 0) : 0;
+
+  store.dispatch(setTodayOverride({
+    dayId: todayId,
+    mode: "override",
+    offset: curOffset + 1,
+  }));
+
+  toast("Next option →");
+  haptic("light");
 });
 
 els.goalCard?.addEventListener("ip:setWeeklyGoal", (e) => {
@@ -85,68 +172,36 @@ els.goalCard?.addEventListener("ip:setWeeklyGoal", (e) => {
   haptic("light");
 });
 
-
-// Open Log Set modal from Today Split (recommended exercise pills)
-els.todaysSplit?.addEventListener("ip:logSet", (e) => {
-  store.dispatch(ensureCurrentWeek());
-
-  const { exercise, exerciseId, origin } = e.detail || {};
-
-  // Stage 1: set selection so the UI highlights + shows focus panel
-  if (exerciseId) {
-    store.dispatch(setSelectedExercise({ id: exerciseId, name: exercise || "" }));
-  }
-
-  if (origin) els.todaysSplit.setAttribute("data-origin", origin);
-
-  store.dispatch(
-    openModal(MODAL_LOG_SET, {
-      exercise: exercise || "Bench Press",
-      exerciseId: exerciseId || "",
-      recommendedName: exercise || "",
-      recommendedId: exerciseId || "",
-    })
-  );
-});
-
-els.todaysSplit?.addEventListener("ip:skipToday", () => {
-  const todayId = dayKey(new Date());
-
-  store.dispatch(setTodayOverride({
-    dayId: todayId,
-    mode: "skip",
-  }));
-
-  toast("Skipped today ✅");
-  haptic("light");
-});
-
-els.todaysSplit?.addEventListener("ip:nextSplit", () => {
-  const todayId = dayKey(new Date());
-  const cur = store.getState()?.program?.todayOverride;
-
-  // only count offsets for today
-  const curOffset = cur?.dayId === todayId ? Number(cur.offset || 0) : 0;
-
-  store.dispatch(setTodayOverride({
-    dayId: todayId,
-    mode: "override",
-    offset: curOffset + 1, // ✅ keep stepping forward
-  }));
-
-  toast("Next option →");
-  haptic("light");
-});
-
-
+// -------------------------
+// Render loop
+// -------------------------
 function render() {
   const state = store.getState();
   const modal = state.ui?.modal;
   const todayId = dayKey(new Date());
+
+  // Clear todayOverride if it belongs to an old day
   const o = state.program?.todayOverride;
   if (o?.dayId && o.dayId !== todayId) {
     store.dispatch(clearTodayOverride(o.dayId));
   }
+
+  // ✅ Today-only cleanup for swaps/extras/editmode
+  // If user comes back next day, we drop old day maps automatically.
+  const swaps = state.program?.exerciseSwapsByDay || {};
+  Object.keys(swaps).forEach((d) => {
+    if (d !== todayId) store.dispatch(clearExerciseSwapsForDay(d));
+  });
+
+  const extras = state.program?.extraExercisesByDay || {};
+  Object.keys(extras).forEach((d) => {
+    if (d !== todayId) store.dispatch(clearExtrasForDay(d));
+  });
+
+  const edits = state.program?.editModeByDay || {};
+  Object.keys(edits).forEach((d) => {
+    if (d !== todayId) store.dispatch(clearEditModeForDay(d));
+  });
 
   // --- Cards ---
   renderStreakBanner(els.streakBanner, state);
@@ -196,59 +251,37 @@ function render() {
     };
   }
 
-  // Log a set (manual/custom)
-  const btnLog = els.todaysSplit?.querySelector("#btnLogSetFromSplit");
-  if (btnLog) {
-    btnLog.onclick = () => {
-      store.dispatch(ensureCurrentWeek());
-      els.todaysSplit?.setAttribute("data-origin", "custom");
-      store.dispatch(openModal(MODAL_LOG_SET, { exercise: "Bench Press", exerciseId: "" }));
-    };
-  }
-
-  // Log set for focused/selected exercise (from focus panel on the card)
-  const btnLogSelected = els.todaysSplit?.querySelector("#btnLogSelectedSet");
-  if (btnLogSelected) {
-    btnLogSelected.onclick = () => {
-      store.dispatch(ensureCurrentWeek());
-
-      const selected = store.getState()?.ui?.selectedExercise;
-      if (!selected?.id) return;
-
-      els.todaysSplit?.setAttribute("data-origin", "recommended");
-
-      store.dispatch(
-        openModal(MODAL_LOG_SET, {
-          exercise: selected.name || "Bench Press",
-          exerciseId: selected.id,
-          recommendedName: selected.name || "",
-          recommendedId: selected.id,
-        })
-      );
-    };
-  }
-
   // --- Modal switch (ONE place, no duplicates) ---
   if (!modal?.open) {
     renderModalRoot(els.modalRoot, null, () => {});
     return;
   }
 
-if (modal.type === MODAL_EXERCISE_FOCUS) {
-  const exId = modal.payload?.exerciseId || "";
-  const summary = selectTodayExerciseSummary(state, exId);
-  const rows = selectSetsForTodayExercise(state, exId); // ✅ ADD THIS
+  if (modal.type === MODAL_EXERCISE_FOCUS) {
+    const exId = modal.payload?.exerciseId || "";
+    const summary = selectTodayExerciseSummary(state, exId);
+    const rows = selectSetsForTodayExercise(state, exId);
 
-  renderModalRoot(
-    els.modalRoot,
-    exerciseFocusHtml(modal.payload, summary, rows), // ✅ PASS ROWS
-    () => store.dispatch(closeModal())
-  );
+    renderModalRoot(
+      els.modalRoot,
+      exerciseFocusHtml(modal.payload, summary, rows),
+      () => store.dispatch(closeModal())
+    );
 
-  bindExerciseFocusModal(modal.payload);
-  return;
-}
+    bindExerciseFocusModal(modal.payload);
+    return;
+  }
 
+  if (modal.type === MODAL_EXERCISE_PICKER) {
+    renderModalRoot(
+      els.modalRoot,
+      exercisePickerHtml(modal.payload),
+      () => store.dispatch(closeModal())
+    );
+
+    bindExercisePickerModal(modal.payload);
+    return;
+  }
 
   if (modal.type === MODAL_LOG_SET) {
     renderModalRoot(
@@ -274,9 +307,6 @@ if (modal.type === MODAL_EXERCISE_FOCUS) {
   renderModalRoot(els.modalRoot, null, () => store.dispatch(closeModal()));
 }
 
-
-
-
 store.subscribe(render);
 render();
 
@@ -286,12 +316,70 @@ els.btnCTA.addEventListener("click", () => {
   store.dispatch(openModal(MODAL_LOG_SET));
 });
 
-
 // Settings placeholder
 els.btnSettings.addEventListener("click", () => {
   toast("Settings modal tomorrow ✅");
 });
 
+// -------------------------
+// Picker modal binder
+// -------------------------
+function bindExercisePickerModal(payload) {
+  const overlay = els.modalRoot.firstElementChild;
+  if (!overlay) return;
+
+  overlay.querySelectorAll("[data-close]").forEach((btn) =>
+    btn.addEventListener("click", () => store.dispatch(closeModal()))
+  );
+
+  const search = overlay.querySelector("#pickerSearch");
+  const list = overlay.querySelector("#pickerList");
+
+  const filterList = () => {
+    const q = String(search?.value || "").trim().toLowerCase();
+    if (!list) return;
+    list.querySelectorAll("[data-pick-exid]").forEach((btn) => {
+      const text = btn.textContent.toLowerCase();
+      btn.style.display = !q || text.includes(q) ? "" : "none";
+    });
+  };
+
+  search?.addEventListener("input", filterList);
+
+  list?.querySelectorAll("[data-pick-exid]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const picked = btn.getAttribute("data-pick-exid") || "";
+      if (!picked) return;
+
+      const todayId = payload.dayId || dayKey(new Date());
+
+      if (payload.mode === "swap") {
+        store.dispatch(setExerciseSwap({
+          dayId: todayId,
+          splitName: payload.splitName,
+          slot: payload.slot,            // 1-based
+          exerciseId: picked,
+          fromExerciseId: payload.fromExerciseId, // reducer hard-guard uses this
+        }));
+        toast("Swapped ✅");
+        haptic("light");
+      } else if (payload.mode === "add") {
+        store.dispatch(addExtraExercise({ dayId: todayId, exerciseId: picked }));
+        toast("Added ✅");
+        haptic("light");
+      }
+
+      store.dispatch(closeModal());
+    });
+  });
+
+  // Autofocus
+  search?.focus?.();
+}
+
+// -------------------------
+// Existing binders (unchanged below)
+// -------------------------
 function bindLogSetModal() {
   const overlay = els.modalRoot.firstElementChild;
   if (!overlay) return;
@@ -352,10 +440,7 @@ function bindLogSetModal() {
 
   btnStart.addEventListener("click", () => {
     if (!running) start();
-    else {
-      // Pause
-      stop();
-    }
+    else stop();
   });
 
   btnReset.addEventListener("click", () => {
@@ -366,63 +451,53 @@ function bindLogSetModal() {
 
   renderTime();
 
-overlay.querySelector("#btnSaveSet")?.addEventListener("click", () => {
-  const splitName = els.todaysSplit?.getAttribute("data-split-name") || "Session";
-  const originAttr = els.todaysSplit?.getAttribute("data-origin") || "custom";
+  overlay.querySelector("#btnSaveSet")?.addEventListener("click", () => {
+    const splitName = els.todaysSplit?.getAttribute("data-split-name") || "Session";
+    const originAttr = els.todaysSplit?.getAttribute("data-origin") || "custom";
 
-  const exerciseName = (inExercise.value || "").trim();
-  const recommendedId = inExercise.dataset.exid || "";
-  const recommendedName = inExercise.dataset.exname || "";
+    const exerciseName = (inExercise.value || "").trim();
+    const recommendedId = inExercise.dataset.exid || "";
+    const recommendedName = inExercise.dataset.exname || "";
 
-  // If user edits the recommended name, treat as custom
-  const isStillRecommended =
-    originAttr === "recommended" &&
-    exerciseName === recommendedName &&
-    !!recommendedId;
+    const isStillRecommended =
+      originAttr === "recommended" &&
+      exerciseName === recommendedName &&
+      !!recommendedId;
 
-  const exerciseId = isStillRecommended ? recommendedId : makeCustomExerciseId(exerciseName);
-  const origin = isStillRecommended ? "recommended" : "custom";
+    const exerciseId = isStillRecommended ? recommendedId : makeCustomExerciseId(exerciseName);
+    const origin = isStillRecommended ? "recommended" : "custom";
 
-  const entry = {
-    id: crypto.randomUUID(),
-    ts: Date.now(),
-    dayId: dayKey(new Date()),
-    weekId: getWeekId(new Date()),
-    splitName,
-    origin,
-    exerciseId,
-    exercise: exerciseName,
-    reps: Number(inReps.value || 0),
-    weight: Number(inWeight.value || 0),
-  };
+    const entry = {
+      id: crypto.randomUUID(),
+      ts: Date.now(),
+      dayId: dayKey(new Date()),
+      weekId: getWeekId(new Date()),
+      splitName,
+      origin,
+      exerciseId,
+      exercise: exerciseName,
+      reps: Number(inReps.value || 0),
+      weight: Number(inWeight.value || 0),
+    };
 
-  // clear one-time origin so it doesn't stick
-  els.todaysSplit?.removeAttribute("data-origin");
+    els.todaysSplit?.removeAttribute("data-origin");
 
-  if (!entry.exercise) {
-    toast("Add an exercise name");
-    return;
-  }
+    if (!entry.exercise) {
+      toast("Add an exercise name");
+      return;
+    }
 
-  store.dispatch(addSet(entry));
-  toast("Set saved");
-  store.dispatch(closeModal());
+    store.dispatch(addSet(entry));
+    toast("Set saved");
+    store.dispatch(closeModal());
   });
-
-
 }
+
 function recommendRepsByName(exerciseName = "") {
   const n = exerciseName.toLowerCase();
-
-  // heavy compounds
   if (/(deadlift|squat|bench|press|row|rdl|leg press|pull)/.test(n)) return 6;
-
-  // medium compounds / secondary
   if (/(incline|split squat|pulldown|extension|curl)/.test(n)) return 10;
-
-  // accessories
   if (/(lateral|raise|calf|tricep|bicep|fly|rear delt)/.test(n)) return 12;
-
   return 8;
 }
 
@@ -441,13 +516,12 @@ function bindExerciseFocusModal(payload) {
   const stateNow = store.getState();
   const cap = 5;
 
-  // Auto-fill from last logged set for this exercise (any day), else fallback recommendation
   const allSets = Array.isArray(stateNow?.log?.sets) ? stateNow.log.sets : [];
   const lastForExercise = allSets.find((s) => s.exerciseId === exerciseId);
   const suggestedReps =
-  Number(lastForExercise?.reps) ||
-  Number(payload?.suggestedReps) ||
-  recommendRepsByName(exerciseName);
+    Number(lastForExercise?.reps) ||
+    Number(payload?.suggestedReps) ||
+    recommendRepsByName(exerciseName);
 
   const suggestedWeight = Number(lastForExercise?.weight) || "";
 
@@ -456,7 +530,6 @@ function bindExerciseFocusModal(payload) {
   const btnLog = overlay.querySelector("#fxLogBtn");
   const btnClear = overlay.querySelector("#fxClearInputs");
 
-  // Track edit mode (null = normal log mode)
   let editingId = null;
 
   function setModeLog() {
@@ -464,8 +537,6 @@ function bindExerciseFocusModal(payload) {
     if (btnLog) btnLog.textContent = "Log Set";
   }
 
-
-  // Prefill inputs (only if empty)
   if (inReps && !inReps.value) inReps.value = String(suggestedReps);
   if (inWeight && !inWeight.value && suggestedWeight !== "") inWeight.value = String(suggestedWeight);
 
@@ -475,7 +546,6 @@ function bindExerciseFocusModal(payload) {
     if (inWeight) inWeight.value = "";
   });
 
-  // ✅ SINGLE click handler for btnLog (no addEventListener + onclick mix)
   btnLog?.addEventListener("click", () => {
     const cur = store.getState();
     const rowsToday = selectSetsForTodayExercise(cur, exerciseId);
@@ -488,20 +558,17 @@ function bindExerciseFocusModal(payload) {
       return;
     }
 
-    // If we're NOT editing, enforce cap
     if (!editingId && rowsToday.length >= cap) {
       toast("5-set cap reached");
       return;
     }
 
     if (editingId) {
-      // UPDATE existing set
       store.dispatch(updateSet(editingId, { reps, weight, ts: Date.now() }));
       toast("Set updated");
       haptic("light");
       setModeLog();
     } else {
-      // ADD new set
       const splitName = els.todaysSplit?.getAttribute("data-split-name") || "Session";
       const origin = els.todaysSplit?.getAttribute("data-origin") || "custom";
 
@@ -522,13 +589,9 @@ function bindExerciseFocusModal(payload) {
       haptic("light");
     }
 
-    // Refresh modal
     store.dispatch(openModal(MODAL_EXERCISE_FOCUS, payload));
   });
 
-
-
-  // DELETE
   overlay.querySelectorAll("[data-del-id]").forEach((b) => {
     b.addEventListener("click", () => {
       const id = b.getAttribute("data-del-id");
@@ -536,163 +599,131 @@ function bindExerciseFocusModal(payload) {
       store.dispatch(deleteSet(id));
       toast("Set deleted");
       haptic("light");
-      // if we deleted the thing we're editing, exit edit mode
       if (editingId === id) setModeLog();
       store.dispatch(openModal(MODAL_EXERCISE_FOCUS, payload));
     });
   });
 
-// =====================
-// Rest Timer + Overlay
-// =====================
-const DEFAULT_TOTAL = 120;          // 2 minutes
-const FINISH_HOLD_MS = 1200;        // how long to show "done" before auto-reset
-let total = DEFAULT_TOTAL;
-let remaining = total;
-let running = false;
-let t = null;
+  // Rest Timer + Overlay (unchanged)
+  const DEFAULT_TOTAL = 120;
+  const FINISH_HOLD_MS = 1200;
+  let total = DEFAULT_TOTAL;
+  let remaining = total;
+  let running = false;
+  let t = null;
 
-// Small card timer + buttons
-const displaySmall = overlay.querySelector("#fxTimerDisplay");
-const btnStartSmall = overlay.querySelector("#fxTimerStart");
-const btnResetSmall = overlay.querySelector("#fxTimerReset");
+  const displaySmall = overlay.querySelector("#fxTimerDisplay");
+  const btnStartSmall = overlay.querySelector("#fxTimerStart");
+  const btnResetSmall = overlay.querySelector("#fxTimerReset");
 
-// Overlay elements
-const overlayEl = overlay.querySelector("#fxTimerOverlay");
-const bigDisplay = overlay.querySelector("#fxTimerBig");
-const hint = overlay.querySelector("#fxTimerHint");
-const btnOverlayClose = overlay.querySelector("#fxTimerOverlayClose");
-const btnOverlayToggle = overlay.querySelector("#fxTimerOverlayToggle");
-const btnOverlayReset = overlay.querySelector("#fxTimerOverlayReset");
+  const overlayEl = overlay.querySelector("#fxTimerOverlay");
+  const bigDisplay = overlay.querySelector("#fxTimerBig");
+  const hint = overlay.querySelector("#fxTimerHint");
+  const btnOverlayClose = overlay.querySelector("#fxTimerOverlayClose");
+  const btnOverlayToggle = overlay.querySelector("#fxTimerOverlayToggle");
+  const btnOverlayReset = overlay.querySelector("#fxTimerOverlayReset");
 
-// Utility: format seconds
-const fmt = (secs) => {
-  const mm = String(Math.floor(secs / 60)).padStart(2, "0");
-  const ss = String(secs % 60).padStart(2, "0");
-  return `${mm}:${ss}`;
-};
+  const fmt = (secs) => {
+    const mm = String(Math.floor(secs / 60)).padStart(2, "0");
+    const ss = String(secs % 60).padStart(2, "0");
+    return `${mm}:${ss}`;
+  };
 
-// Render everywhere
-const renderTimer = () => {
-  const txt = fmt(Math.max(0, remaining));
-  if (displaySmall) displaySmall.textContent = txt;
-  if (bigDisplay) bigDisplay.textContent = txt;
+  const renderTimer = () => {
+    const txt = fmt(Math.max(0, remaining));
+    if (displaySmall) displaySmall.textContent = txt;
+    if (bigDisplay) bigDisplay.textContent = txt;
 
-  const label = running ? "Pause" : "Start";
-  if (btnStartSmall) btnStartSmall.textContent = label;
-  if (btnOverlayToggle) btnOverlayToggle.textContent = label;
+    const label = running ? "Pause" : "Start";
+    if (btnStartSmall) btnStartSmall.textContent = label;
+    if (btnOverlayToggle) btnOverlayToggle.textContent = label;
 
-  if (hint) {
-    if (remaining <= 0) hint.textContent = "Done ✅";
-    else hint.textContent = running ? "Resting…" : "Tap Start to begin.";
-  }
-};
+    if (hint) {
+      if (remaining <= 0) hint.textContent = "Done ✅";
+      else hint.textContent = running ? "Resting…" : "Tap Start to begin.";
+    }
+  };
 
-const stopTimer = () => {
-  running = false;
-  if (t) clearInterval(t);
-  t = null;
-  renderTimer();
-};
+  const stopTimer = () => {
+    running = false;
+    if (t) clearInterval(t);
+    t = null;
+    renderTimer();
+  };
 
-const closeOverlay = () => {
-  if (!overlayEl) return;
+  const closeOverlay = () => {
+    if (!overlayEl) return;
+    const active = document.activeElement;
+    if (active && overlayEl.contains(active)) {
+      (displaySmall || btnStartSmall || overlay.querySelector("[data-close]"))?.focus?.();
+    }
+    overlayEl.classList.add("hidden");
+    overlayEl.setAttribute("aria-hidden", "true");
+  };
 
-  // If focus is currently inside overlay, move it out first
-  const active = document.activeElement;
-  if (active && overlayEl.contains(active)) {
-    // send focus to a safe element (the small timer pill or start button)
-    (displaySmall || btnStartSmall || overlay.querySelector("[data-close]"))?.focus?.();
-  }
+  const openOverlay = () => {
+    if (!overlayEl) return;
+    overlayEl.classList.remove("hidden");
+    overlayEl.setAttribute("aria-hidden", "false");
+  };
 
-  overlayEl.classList.add("hidden");
-  overlayEl.setAttribute("aria-hidden", "true");
-};
+  const finishTimer = () => {
+    stopTimer();
+    remaining = 0;
+    renderTimer();
+    beep();
+    haptic("success");
+    toast("Rest done 💪");
+    overlayEl?.classList.add("timerDone");
+    setTimeout(() => {
+      overlayEl?.classList.remove("timerDone");
+      remaining = total;
+      renderTimer();
+      closeOverlay();
+    }, FINISH_HOLD_MS);
+  };
 
+  const startTimer = () => {
+    if (running) return;
+    if (remaining <= 0) remaining = total;
+    running = true;
+    renderTimer();
+    t = setInterval(() => {
+      remaining -= 1;
+      renderTimer();
+      if (remaining <= 0) finishTimer();
+    }, 1000);
+  };
 
-const openOverlay = () => {
-  if (!overlayEl) return;
-  overlayEl.classList.remove("hidden");
-  overlayEl.setAttribute("aria-hidden", "false");
-};
+  const toggleTimer = () => {
+    if (running) stopTimer();
+    else startTimer();
+  };
 
-// Finish behavior: beep + glow, then auto reset to 2:00
-const finishTimer = () => {
-  stopTimer();
-  remaining = 0;
-  renderTimer();
+  displaySmall?.addEventListener("click", openOverlay);
+  btnOverlayClose?.addEventListener("click", closeOverlay);
 
-  // feedback
-  beep();
-  haptic("success");
-  toast("Rest done 💪");
+  btnStartSmall?.addEventListener("click", () => {
+    openOverlay();
+    toggleTimer();
+  });
 
-  // add a CSS class for pulse/glow (you’ll add CSS below)
-  overlayEl?.classList.add("timerDone");
+  btnOverlayToggle?.addEventListener("click", toggleTimer);
 
-  // auto reset after a short "done" moment
-  setTimeout(() => {
-    overlayEl?.classList.remove("timerDone");
+  const resetTimer = () => {
+    stopTimer();
     remaining = total;
     renderTimer();
+  };
 
-    // Optional: auto close overlay so you can go log next set
-    closeOverlay();
-  }, FINISH_HOLD_MS);
-};
+  btnResetSmall?.addEventListener("click", () => {
+    openOverlay();
+    resetTimer();
+  });
 
-const startTimer = () => {
-  if (running) return;
+  btnOverlayReset?.addEventListener("click", resetTimer);
 
-  // guard: never start at 0 (prevents instant finish/beep)
-  if (remaining <= 0) remaining = total;
-
-  running = true;
   renderTimer();
-
-  t = setInterval(() => {
-    remaining -= 1;
-    renderTimer();
-    if (remaining <= 0) finishTimer();
-  }, 1000);
-};
-
-const toggleTimer = () => {
-  if (running) stopTimer();
-  else startTimer();
-};
-
-// Open overlay when tapping the small pill time
-displaySmall?.addEventListener("click", openOverlay);
-
-// Close overlay
-btnOverlayClose?.addEventListener("click", closeOverlay);
-
-// Controls (small + overlay stay in sync)
-btnStartSmall?.addEventListener("click", () => {
-  openOverlay();     // your desired UX: timer "takes over" when used
-  toggleTimer();
-});
-
-btnOverlayToggle?.addEventListener("click", toggleTimer);
-
-const resetTimer = () => {
-  stopTimer();
-  remaining = total;
-  renderTimer();
-};
-
-btnResetSmall?.addEventListener("click", () => {
-  openOverlay();
-  resetTimer();
-});
-
-btnOverlayReset?.addEventListener("click", resetTimer);
-
-// initial render
-renderTimer();
-
-
 }
 
 function simpleAfterburnModalHtml() {
@@ -741,7 +772,7 @@ function bindAfterburnModal() {
   });
 }
 
-// Optional: register service worker (comment out if you want)
+// Optional: register service worker
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("./sw.js").catch(() => {});

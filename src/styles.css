@@ -908,3 +908,32 @@ body {
     opacity: 0.9;
     filter: saturate(0.85);
 }
+.todayHint {
+    margin-top: 6px;
+    color: var(--muted);
+    font-size: 12px;
+}
+/* Optional: tiny icon buttons in edit mode */
+.iconBtn.mini {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    opacity: 0.9;
+}
+
+.iconBtn.miniDanger {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    opacity: 0.9;
+}
+
+.iconBtn.miniDanger:disabled,
+.iconBtn.mini:disabled {
+    opacity: 0.35;
+}
+
+
+
+
+
