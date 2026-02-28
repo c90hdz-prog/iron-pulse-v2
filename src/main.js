@@ -11,6 +11,7 @@ import {
   setWeeklyGoal,
   clearTodayOverride,
   deleteSet,
+  skipWeeklyGoalSetup,
   setSelectedExercise,
 
   // swaps + extras + edit mode
@@ -172,11 +173,44 @@ els.goalCard?.addEventListener("ip:setWeeklyGoal", (e) => {
   haptic("light");
 });
 
+els.goalCard?.addEventListener("ip:skipWeeklyGoalSetup", () => {
+  store.dispatch(skipWeeklyGoalSetup());
+  toast("Goal set to 5 days ✅");
+  haptic("light");
+});
+
 // -------------------------
 // Render loop
 // -------------------------
 function render() {
   const state = store.getState();
+    // -------------------------
+  // Goal card placement (DOM move)
+  // -------------------------
+  const needsGoalSetup = (state?.goals?.goalHandledWeekId !== state?.streak?.weekId);
+
+  // Move the existing #goalCard container node to the right spot
+  // (Render order alone does NOT move it)
+  const parent = els.goalCard?.parentElement;
+  if (parent && els.goalCard) {
+    if (needsGoalSetup) {
+      // Put goal card above streakBanner
+      if (els.streakBanner && els.goalCard.nextSibling !== els.streakBanner) {
+        parent.insertBefore(els.goalCard, els.streakBanner);
+      }
+    } else {
+      // Put goal card near the bottom (after Afterburn)
+      if (els.afterburn) {
+        // Insert after afterburn
+        const after = els.afterburn.nextSibling;
+        if (after) parent.insertBefore(els.goalCard, after);
+        else parent.appendChild(els.goalCard);
+      } else {
+        // fallback: last in parent
+        parent.appendChild(els.goalCard);
+      }
+    }
+  }
   const modal = state.ui?.modal;
   const todayId = dayKey(new Date());
 
@@ -204,19 +238,21 @@ function render() {
   });
 
   // --- Cards ---
+  // --- Cards ---
   renderStreakBanner(els.streakBanner, state);
+  renderWeeklyVolume(els.weeklyVolume, state);
+  renderTodaysSplit(els.todaysSplit, state);
+  renderTodaySummary(els.todaySummary, selectTodaySummary(state));
+  renderAfterburnCard(els.afterburn, () => store.dispatch(openModal(MODAL_AFTERBURN)));
 
+  // Render goal card (it will *appear* top or bottom because we moved the container above)
   renderGoalCard(els.goalCard, state, () => {
     if (confirm("Reset this week's progress?")) {
       store.dispatch(resetWeek());
       toast("Weekly progress reset");
     }
   });
-
-  renderWeeklyVolume(els.weeklyVolume, state);
-  renderTodaysSplit(els.todaysSplit, state);
-  renderTodaySummary(els.todaySummary, selectTodaySummary(state));
-  renderAfterburnCard(els.afterburn, () => store.dispatch(openModal(MODAL_AFTERBURN)));
+  
 
   // --- Button wiring (SAFE: onclick overwrites each render) ---
 

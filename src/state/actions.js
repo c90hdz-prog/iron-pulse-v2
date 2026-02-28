@@ -85,6 +85,11 @@ export const clearEditModeForDay = (dayId) => ({
 // ===========================
 // Existing actions
 // ===========================
+
+export const SKIP_WEEKLY_GOAL_SETUP = "SKIP_WEEKLY_GOAL_SETUP";
+
+export const skipWeeklyGoalSetup = () => ({ type: SKIP_WEEKLY_GOAL_SETUP });
+
 export const deleteSet = (id) => ({
   type: DELETE_SET,
   id,

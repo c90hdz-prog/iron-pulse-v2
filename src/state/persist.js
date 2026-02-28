@@ -23,7 +23,12 @@ export function savePersistedState(state) {
 // Only keep durable state; drop UI stuff like modals
 export function selectPersistSubset(state) {
   return {
-    goals: { weeklyGoal: state?.goals?.weeklyGoal ?? 2 },
+    goals: {
+      weeklyGoal: state.goals?.weeklyGoal ?? 2,
+      goalHandledWeekId: state.goals?.goalHandledWeekId ?? null,
+      goalHandledMode: state.goals?.goalHandledMode ?? null,
+      goalLocked: !!state.goals?.goalLocked,
+    },
 
     log: {
       sets: Array.isArray(state?.log?.sets) ? state.log.sets : [],

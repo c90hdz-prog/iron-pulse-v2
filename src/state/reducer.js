@@ -14,6 +14,7 @@ import {
   ENSURE_CURRENT_WEEK,
   SET_SELECTED_EXERCISE,
   SET_TODAY_OVERRIDE,
+  SKIP_WEEKLY_GOAL_SETUP,
   CLEAR_TODAY_OVERRIDE,
 
   // swaps
@@ -39,6 +40,9 @@ export const initialState = {
 
   goals: {
     weeklyGoal: 2,
+    goalHandledWeekId: null,
+    goalHandledMode: null,
+    goalLocked: false,
   },
 
   log: {
@@ -67,6 +71,20 @@ export const initialState = {
   },
 };
 
+function safeWeekIdForEntry(entry) {
+  // Prefer dayId if you have it (stable, matches your logs)
+  // dayId in your app looks like "YYYY-MM-DD"
+  const dayId = entry?.dayId;
+
+  if (typeof dayId === "string" && dayId.length >= 10) {
+    // Convert "YYYY-MM-DD" into a Date safely
+    return getWeekId(new Date(dayId + "T00:00:00"));
+  }
+
+  // fallback to "now"
+  return getWeekId(new Date());
+}
+
 function hasSetsForExerciseOnDay(state, dayId, exerciseId) {
   const sets = Array.isArray(state?.log?.sets) ? state.log.sets : [];
   return sets.some((s) => s?.dayId === dayId && s?.exerciseId === exerciseId);
@@ -86,8 +104,14 @@ export function reducer(state, action) {
         ui: { ...state.ui, modal: { open: false, type: null, payload: {} } },
       };
 
-    case ADD_SET:
-      return { ...state, log: { ...state.log, sets: [action.entry, ...state.log.sets] } };
+    case ADD_SET: {
+      const entry = action.entry || {};
+      const normalized = {
+        ...entry,
+        weekId: entry.weekId || safeWeekIdForEntry(entry),
+      };
+      return { ...state, log: { ...state.log, sets: [normalized, ...state.log.sets] } };
+    }
 
     case UPDATE_SET: {
       const sets = Array.isArray(state.log.sets) ? state.log.sets : [];
@@ -102,15 +126,49 @@ export function reducer(state, action) {
       return { ...state, log: { ...state.log, sets: sets.filter((s) => s.id !== action.id) } };
     }
 
-    case SET_WEEKLY_GOAL:
-      return { ...state, goals: { ...state.goals, weeklyGoal: Math.max(1, Number(action.goal) || 2) } };
+    case SET_WEEKLY_GOAL: {
+      const nextGoal = Math.max(1, Number(action.goal) || 2);
+      const curWeek = state?.streak?.weekId || getWeekId(new Date());
 
+      return {
+        ...state,
+        goals: {
+          ...state.goals,
+          weeklyGoal: nextGoal,
+          goalHandledWeekId: curWeek,
+          goalHandledMode: "saved",
+          goalLocked: true,
+        },
+      };
+    }
+    case SKIP_WEEKLY_GOAL_SETUP: {
+      const curWeek = state?.streak?.weekId || getWeekId(new Date());
+
+      return {
+        ...state,
+        goals: {
+          ...state.goals,
+          weeklyGoal: 5,                 // frictionless default
+          goalHandledWeekId: curWeek,    // mark handled so it moves to bottom
+          goalHandledMode: "skipped",
+          goalLocked: true,
+        },
+      };
+    }
     case RESET_WEEK: {
       const weekId = state.streak.weekId;
       return {
         ...state,
         log: { ...state.log, sessions: (state.log.sessions || []).filter((s) => s.weekId !== weekId) },
         streak: { ...state.streak, lastSessionDay: null },
+
+        // Unlock goal buttons after reset
+        goals: {
+          ...state.goals,
+          goalLocked: false,
+          goalHandledWeekId: null,
+          goalHandledMode: null,
+        },
       };
     }
 
