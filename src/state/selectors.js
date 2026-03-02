@@ -101,11 +101,22 @@ export function selectTodayStatus(state) {
 
 /** Aggregated Today Summary */
 export function selectTodaySummary(state) {
+  const today = dayKey(new Date());
+
+  const afterburnEntry = state?.log?.afterburnByDay?.[today] || null;
+
   return {
     status: selectTodayStatus(state),
     sets: selectSetsToday(state).length,
     volume: selectTodayVolume(state),
     exercises: selectExercisesToday(state),
+
+    afterburn: afterburnEntry
+      ? {
+          finisher: afterburnEntry.finisher,
+          durationSec: afterburnEntry.durationSec,
+        }
+      : null,
   };
 }
 
@@ -174,4 +185,88 @@ export function selectWeekCompetition(state) {
     ratio,
     pctToBest,
   };
+}
+
+// -------------------------
+// Heatmap (last 90 days)
+// -------------------------
+function isoDay(date) {
+  // YYYY-MM-DD local
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function addDays(date, delta) {
+  const d = new Date(date);
+  d.setDate(d.getDate() + delta);
+  return d;
+}
+
+function volumeForDay(sets, dayId) {
+  let v = 0;
+  for (const s of sets || []) {
+    if (!s || s.dayId !== dayId) continue;
+    v += (Number(s.reps) || 0) * (Number(s.weight) || 0);
+  }
+  return Math.round(v);
+}
+
+// Turns raw volume into 0..4 intensity buckets (tweak thresholds later)
+function volumeLevel(vol) {
+  if (vol <= 0) return 0;
+  if (vol < 3000) return 1;
+  if (vol < 8000) return 2;
+  if (vol < 15000) return 3;
+  return 4;
+}
+
+export function selectHeatmap90(state) {
+  const sets = selectSets(state);
+  const afterburnByDay = state?.log?.afterburnByDay || {};
+  const sessions = Array.isArray(state?.log?.sessions) ? state.log.sessions : [];
+
+  const end = new Date(); // today
+  const start = addDays(end, -89);
+
+  // Build a fast lookup of completed-session days from sessions.ts
+  const completedDays = new Set();
+  for (const s of sessions) {
+    const ts = Number(s?.ts);
+    if (!Number.isFinite(ts) || ts <= 0) continue;
+    completedDays.add(isoDay(new Date(ts)));
+  }
+
+  // Also include streak.lastSessionDay (covers edge cases)
+  if (state?.streak?.lastSessionDay) {
+    completedDays.add(state.streak.lastSessionDay);
+  }
+
+  const days = [];
+  for (let i = 0; i < 90; i++) {
+    const date = addDays(start, i);
+    const dayId = isoDay(date);
+
+    const vol = volumeForDay(sets, dayId);
+    const didAfterburn = !!afterburnByDay[dayId];
+    const didSession = completedDays.has(dayId);
+
+    // C RULE: active if volume OR session OR afterburn
+    const active = vol > 0 || didSession || didAfterburn;
+
+    // Intensity: volume-based, but if active with 0 volume, show light level 1
+    const lvl = vol > 0 ? volumeLevel(vol) : (active ? 1 : 0);
+
+    days.push({
+      dayId,
+      date,
+      volume: vol,
+      level: lvl,
+      afterburn: didAfterburn, // for your future ring/glow ✅
+      session: didSession,     // new: for tooltip / styling later
+    });
+  }
+
+  return days;
 }

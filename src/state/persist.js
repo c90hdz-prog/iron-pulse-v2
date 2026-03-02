@@ -33,6 +33,7 @@ export function selectPersistSubset(state) {
     log: {
       sets: Array.isArray(state?.log?.sets) ? state.log.sets : [],
       sessions: Array.isArray(state?.log?.sessions) ? state.log.sessions : [],
+      afterburnByDay: state.log?.afterburnByDay || {},
     },
 
     streak: {
@@ -53,6 +54,12 @@ export function selectPersistSubset(state) {
         state?.program?.extraExercisesByDay && typeof state.program.extraExercisesByDay === "object"
           ? state.program.extraExercisesByDay
           : {},
+
+      // Heatmap + other durable prefs live here (persisted)
+      prefs:
+        state?.program?.prefs && typeof state.program.prefs === "object"
+          ? state.program.prefs
+          : { heatmapCollapsed: null },
 
       // We can persist edit mode, but it’s nicer to NOT persist it (so you don't reopen in edit mode).
       // We'll store it as empty always.

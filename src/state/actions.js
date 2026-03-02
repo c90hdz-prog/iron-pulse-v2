@@ -86,6 +86,25 @@ export const clearEditModeForDay = (dayId) => ({
 // Existing actions
 // ===========================
 
+export const TOGGLE_HEATMAP_COLLAPSE = "TOGGLE_HEATMAP_COLLAPSE";
+
+export const toggleHeatmapCollapse = () => ({
+  type: TOGGLE_HEATMAP_COLLAPSE,
+});
+export const SET_AFTERBURN_FOR_DAY = "SET_AFTERBURN_FOR_DAY";
+export const CLEAR_AFTERBURN_FOR_DAY = "CLEAR_AFTERBURN_FOR_DAY";
+
+export const setAfterburnForDay = (payload) => ({
+  // payload: { dayId, finisher }  finisher: string e.g. "Push-ups"
+  type: SET_AFTERBURN_FOR_DAY,
+  payload,
+});
+
+export const clearAfterburnForDay = (dayId) => ({
+  type: CLEAR_AFTERBURN_FOR_DAY,
+  payload: { dayId },
+});
+
 export const SKIP_WEEKLY_GOAL_SETUP = "SKIP_WEEKLY_GOAL_SETUP";
 
 export const skipWeeklyGoalSetup = () => ({ type: SKIP_WEEKLY_GOAL_SETUP });

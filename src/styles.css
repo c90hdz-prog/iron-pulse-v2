@@ -933,7 +933,27 @@ body {
     opacity: 0.35;
 }
 
+/* Heatmap helpers */
+.hmCell[data-afterburn="1"] {
+    outline: 2px solid rgba(255, 255, 255, 0.5);
+    outline-offset: 1px;
+}
 
+.hmCell[data-session="1"] {
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.25) inset;
+}
+/* Afterburn: keep selected finisher visibly highlighted */
+.btn.active,
+button.btn.active {
+    outline: 2px solid rgba(255, 255, 255, 0.55);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35) inset;
+}
 
+/* Optional: make it feel "pressed" */
+.btn.active:active,
+button.btn.active:active {
+    transform: translateY(1px);
+}
 
 

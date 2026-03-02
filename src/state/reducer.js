@@ -16,6 +16,8 @@ import {
   SET_TODAY_OVERRIDE,
   SKIP_WEEKLY_GOAL_SETUP,
   CLEAR_TODAY_OVERRIDE,
+  SET_AFTERBURN_FOR_DAY,
+  CLEAR_AFTERBURN_FOR_DAY,
 
   // swaps
   SET_EXERCISE_SWAP,
@@ -26,7 +28,7 @@ import {
   ADD_EXTRA_EXERCISE,
   REMOVE_EXTRA_EXERCISE,
   CLEAR_EXTRAS_FOR_DAY,
-
+  TOGGLE_HEATMAP_COLLAPSE,
   // edit mode
   TOGGLE_EDIT_MODE_FOR_DAY,
   CLEAR_EDIT_MODE_FOR_DAY,
@@ -48,6 +50,7 @@ export const initialState = {
   log: {
     sets: [],
     sessions: [],
+    afterburnByDay: {}, // { [dayId]: { dayId, finisher, ts } }
   },
 
   streak: {
@@ -68,6 +71,9 @@ export const initialState = {
 
     // editModeByDay[dayId] = true/false
     editModeByDay: {},
+    prefs: {
+      heatmapCollapsed: null, // null = never set (use smart default), true/false = user preference
+  },
   },
 };
 
@@ -220,6 +226,43 @@ export function reducer(state, action) {
     // ===========================
     // Swap Overrides (Today-only)
     // ===========================
+
+    case SET_AFTERBURN_FOR_DAY: {
+      const p = action.payload || {};
+      const dayId = p.dayId;
+      const finisher = String(p.finisher || "").trim();
+      const durationSec = Number(p.durationSec || 0);
+
+      if (!dayId || !finisher) return state;
+
+      const cur = state.log?.afterburnByDay || {};
+      const next = {
+        ...cur,
+        [dayId]: { dayId, finisher, durationSec: durationSec > 0 ? durationSec : null, ts: Date.now() },
+      };
+
+      return {
+        ...state,
+        log: { ...state.log, afterburnByDay: next },
+      };
+    }
+
+case CLEAR_AFTERBURN_FOR_DAY: {
+  const dayId = action.payload?.dayId;
+  if (!dayId) return state;
+
+  const cur = state.log?.afterburnByDay || {};
+  if (!cur[dayId]) return state;
+
+  const next = { ...cur };
+  delete next[dayId];
+
+  return {
+    ...state,
+    log: { ...state.log, afterburnByDay: next },
+  };
+}
+
     case SET_EXERCISE_SWAP: {
       const p = action.payload || {};
       const dayId = p.dayId;
@@ -296,6 +339,24 @@ export function reducer(state, action) {
     // ===========================
     // Extras (Unlimited, Today-only)
     // ===========================
+    case TOGGLE_HEATMAP_COLLAPSE: {
+      const cur = state.program?.prefs?.heatmapCollapsed;
+
+      // If never set, default to "collapse" on first toggle (makes the button intuitive)
+      const nextVal = cur === null ? true : !cur;
+
+      return {
+        ...state,
+        program: {
+          ...state.program,
+          prefs: {
+            ...(state.program?.prefs || {}),
+            heatmapCollapsed: nextVal,
+          },
+        },
+      };
+    }
+
     case ADD_EXTRA_EXERCISE: {
       const p = action.payload || {};
       const dayId = p.dayId;

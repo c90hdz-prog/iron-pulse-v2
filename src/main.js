@@ -22,8 +22,10 @@ import {
   clearExtrasForDay,
   toggleEditModeForDay,
   clearEditModeForDay,
+  toggleHeatmapCollapse
 } from "./state/actions.js";
-
+import { setAfterburnForDay } from "./state/actions.js";
+import { renderHeatmapCard } from "./features/heatmap/heatmapCard.js";
 import { renderModalRoot } from "./ui/modal.js";
 import { toast } from "./ui/toast.js";
 import { haptic } from "./ui/haptics.js";
@@ -53,7 +55,7 @@ import { renderStreakBanner } from "./features/streak/streakBanner.js";
 import { renderGoalCard } from "./features/goals/goalCard.js";
 import { renderWeeklyVolume } from "./features/volume/volumeCard.js";
 import { renderTodaysSplit } from "./features/split/todaysSplit.js";
-import { renderAfterburnCard, MODAL_AFTERBURN }
+import { renderAfterburnCard, MODAL_AFTERBURN, afterburnModalHtml, bindAfterburnModal }
 from "./features/afterburn/afterburnModal.js";
 
 
@@ -70,6 +72,7 @@ const els = {
   btnCTA: document.getElementById("btnCTA"),
   btnSettings: document.getElementById("btnSettings"),
   todaySummary: document.getElementById("todaySummary"),
+  heatmap: document.getElementById("heatmap"),
 };
 
 // -------------------------
@@ -179,6 +182,9 @@ els.goalCard?.addEventListener("ip:skipWeeklyGoalSetup", () => {
   haptic("light");
 });
 
+els.heatmap?.addEventListener("ip:toggleHeatmap", () => {
+  store.dispatch(toggleHeatmapCollapse());
+});
 // -------------------------
 // Render loop
 // -------------------------
@@ -241,6 +247,7 @@ function render() {
   // --- Cards ---
   renderStreakBanner(els.streakBanner, state);
   renderWeeklyVolume(els.weeklyVolume, state);
+  renderHeatmapCard(els.heatmap, state);
   renderTodaysSplit(els.todaysSplit, state);
   renderTodaySummary(els.todaySummary, selectTodaySummary(state));
   renderAfterburnCard(els.afterburn, () => store.dispatch(openModal(MODAL_AFTERBURN)));
@@ -252,7 +259,7 @@ function render() {
       toast("Weekly progress reset");
     }
   });
-  
+
 
   // --- Button wiring (SAFE: onclick overwrites each render) ---
 
@@ -332,10 +339,17 @@ function render() {
   if (modal.type === MODAL_AFTERBURN) {
     renderModalRoot(
       els.modalRoot,
-      simpleAfterburnModalHtml(),
+      afterburnModalHtml(state),
       () => store.dispatch(closeModal())
     );
-    bindAfterburnModal();
+
+    const overlay = els.modalRoot.firstElementChild;
+    bindAfterburnModal(
+      overlay,
+      store,
+      () => store.dispatch(closeModal()),
+      { toast, haptic, beep }
+    );
     return;
   }
 
@@ -762,55 +776,17 @@ function bindExerciseFocusModal(payload) {
   renderTimer();
 }
 
-function simpleAfterburnModalHtml() {
-  return `
-    <div class="modal" role="dialog" aria-modal="true">
-      <div class="modalHeader">
-        <div class="modalTitle">Afterburn</div>
-        <button class="iconBtn" data-close>✕</button>
-      </div>
-      <div class="modalBody">
-        <div class="big">Pick a finisher</div>
-        <div style="color:var(--muted); font-size: 12px;">Tomorrow: add a tiny timer + completion stamp.</div>
-        <div style="display:flex; gap:10px; margin-top:10px;">
-          <button class="btn" data-finisher="Push-ups">Push-ups</button>
-          <button class="btn" data-finisher="Plank">Plank</button>
-          <button class="btn" data-finisher="Bike">Bike</button>
-        </div>
-      </div>
-      <div class="modalActions">
-        <button class="btn" data-close>Close</button>
-        <button class="btn btnPrimary" id="btnAfterburnComplete">Complete</button>
-      </div>
-    </div>
-  `;
-}
-
-function bindAfterburnModal() {
-  const overlay = els.modalRoot.firstElementChild;
-  if (!overlay) return;
-
-  overlay.querySelectorAll("[data-close]").forEach((btn) =>
-    btn.addEventListener("click", () => store.dispatch(closeModal()))
-  );
-
-  let chosen = null;
-  overlay.querySelectorAll("[data-finisher]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      chosen = btn.getAttribute("data-finisher");
-      toast(`${chosen} selected`);
-    });
-  });
-
-  overlay.querySelector("#btnAfterburnComplete")?.addEventListener("click", () => {
-    toast(chosen ? `Afterburn complete: ${chosen}` : "Afterburn complete");
-    store.dispatch(closeModal());
-  });
-}
 
 // Optional: register service worker
+// Register SW only in production (prevents Live Server cache weirdness)
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./sw.js").catch(() => {});
-  });
+  const isLocal =
+    location.hostname === "localhost" ||
+    location.hostname === "127.0.0.1";
+
+  if (!isLocal) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("./sw.js").catch(() => {});
+    });
+  }
 }
