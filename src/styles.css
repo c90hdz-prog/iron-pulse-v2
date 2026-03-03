@@ -956,4 +956,189 @@ button.btn.active:active {
     transform: translateY(1px);
 }
 
+/* ===== Apple polish: Weekly Volume card ===== */
 
+.ipGlass {
+    position: relative;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+    overflow: hidden;
+}
+
+.ipGlass::before {
+    content: "";
+    position: absolute;
+    inset: -60px -80px auto auto;
+    width: 220px;
+    height: 220px;
+    border-radius: 999px;
+    background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0.00) 60%);
+    pointer-events: none;
+}
+
+.ipTopRow {
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.ipBig {
+    margin-top: 6px;
+    font-size: 24px;
+    font-weight: 850;
+    letter-spacing: -0.2px;
+}
+
+.ipUnit {
+    font-size: 14px;
+    font-weight: 650;
+    opacity: 0.75;
+}
+
+.ipSeg {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.ipBarWrap {
+    position: relative;
+    margin-top: 12px;
+    height: 12px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.10);
+    overflow: hidden;
+}
+
+.ipBarFill {
+    height: 100%;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.70);
+    transform: translateZ(0);
+}
+
+.ipBarFill.ipAnimate {
+    transition: width 420ms cubic-bezier(0.2, 0.9, 0.2, 1);
+}
+
+.ipBarShine {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg,
+            rgba(255, 255, 255, 0.00) 0%,
+            rgba(255, 255, 255, 0.08) 35%,
+            rgba(255, 255, 255, 0.00) 70%);
+    transform: translateX(-40%);
+    animation: ipShine 2.8s ease-in-out infinite;
+    pointer-events: none;
+    mix-blend-mode: screen;
+}
+
+@keyframes ipShine {
+    0% {
+        transform: translateX(-60%);
+        opacity: .25;
+    }
+
+    50% {
+        transform: translateX(20%);
+        opacity: .45;
+    }
+
+    100% {
+        transform: translateX(60%);
+        opacity: .25;
+    }
+}
+
+.ipMeta {
+    margin-top: 10px;
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 12px;
+    color: var(--muted);
+}
+
+.ipMetaLeft {
+    opacity: 0.92;
+}
+
+.ipMetaRight {
+    text-align: right;
+    opacity: 0.92;
+}
+
+.ipVehRow {
+    margin-top: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 8px;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(0, 0, 0, 0.10);
+}
+
+.ipVeh {
+    flex: 1;
+    min-width: 120px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.ipVehImg {
+    width: 64px;
+    height: 64px;
+    object-fit: contain;
+}
+
+.ipVehEmoji {
+    font-size: 44px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.ipVeh.isCurrent {
+    opacity: 0.72;
+}
+
+.ipVeh.isNext {
+    opacity: 1;
+    filter: drop-shadow(0 14px 22px rgba(0, 0, 0, 0.35));
+}
+
+.ipVehLabel {
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.2px;
+    text-align: center;
+}
+
+.ipVehArrow {
+    width: 26px;
+    min-width: 26px;
+    opacity: 0.45;
+    color: var(--muted);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 16px;
+    user-select: none;
+}
+
+.ipFoot {
+    margin-top: 10px;
+    font-size: 12px;
+    color: var(--muted);
+    opacity: 0.9;
+}

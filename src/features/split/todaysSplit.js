@@ -37,6 +37,8 @@ function calcTodayStats(sets, todayId) {
 }
 
 export function renderTodaysSplit(el, state) {
+  if (!el) return;
+
   const todayId = dayKey(new Date());
   const completedToday = state?.streak?.lastSessionDay === todayId;
 
@@ -58,7 +60,6 @@ export function renderTodaysSplit(el, state) {
   };
 
   const meta = splitMeta(plan.splitName, plan.label);
-
   const minSets = 3;
 
   // Base 5
@@ -79,6 +80,7 @@ export function renderTodaysSplit(el, state) {
     });
 
   const editMode = !!state?.program?.editModeByDay?.[todayId];
+  const editBtnLabel = editMode ? "DONE" : "EDIT";
 
   // For UI locking: swaps/removals blocked if ANY sets exist for that exerciseId today
   const hasSetsFor = (exerciseId) => {
@@ -86,11 +88,9 @@ export function renderTodaysSplit(el, state) {
     return st.sets > 0;
   };
 
-  // Header right button: Next option (ONLY cycle button)
-  // Second small button: Edit toggle
-  const editBtnLabel = editMode ? "DONE" : "EDIT";
-
-  // Build rows
+  // IMPORTANT FIX:
+  // Do NOT use <button> as the row wrapper because we place real <button>s inside (swap/remove).
+  // Nested buttons = invalid HTML and causes layout breakup.
   const renderRow = (exObj, opts = {}) => {
     const active = selected?.id === exObj.id;
     const st = statsById.get(exObj.id) || { sets: 0, lbs: 0 };
@@ -99,10 +99,8 @@ export function renderTodaysSplit(el, state) {
     const isDone = st.sets >= minSets;
 
     const isExtra = !!opts.isExtra;
+    const slot = opts.slot || 1;
 
-    // Edit controls:
-    // - Base 5: show "Swap" affordance (but disabled if started)
-    // - Extras: show remove (but disabled if started)
     const swapDisabled = isStarted;
     const removeDisabled = isStarted;
 
@@ -110,25 +108,33 @@ export function renderTodaysSplit(el, state) {
 
     const editAffordance = editMode
       ? isExtra
-        ? `<button class="iconBtn miniDanger" data-remove-exid="${exObj.id}" ${
-            removeDisabled ? "disabled" : ""
-          } title="${removeDisabled ? "Can't remove (already logged)" : "Remove"}">✕</button>`
-        : `<button class="iconBtn mini" data-swap-slot="${opts.slot || 1}" data-from-exid="${exObj.id}" ${
-            swapDisabled ? "disabled" : ""
-          } title="${swapDisabled ? "Can't swap (already logged)" : "Swap"}">↻</button>`
+        ? `
+          <button
+            type="button"
+            class="iconBtn miniDanger"
+            data-remove-exid="${exObj.id}"
+            ${removeDisabled ? "disabled" : ""}
+            title="${removeDisabled ? "Can't remove (already logged)" : "Remove"}"
+          >✕</button>
+        `
+        : `
+          <button
+            type="button"
+            class="iconBtn mini"
+            data-swap-slot="${slot}"
+            data-from-exid="${exObj.id}"
+            ${swapDisabled ? "disabled" : ""}
+            title="${swapDisabled ? "Can't swap (already logged)" : "Swap"}"
+          >↻</button>
+        `
       : "";
 
-    // When editMode is ON, tapping the row:
-    // - base rows open swap picker (unless disabled)
-    // - extra rows do nothing (use X)
-    // When editMode is OFF, tapping opens focus log modal (existing behavior)
     const dataAttrs = [
       `data-ex="${exObj.name}"`,
       `data-exid="${exObj.id}"`,
       `data-sreps="${exObj.suggestedReps ?? ""}"`,
       isExtra ? `data-extra="1"` : `data-extra="0"`,
-      opts.slot ? `data-slot="${opts.slot}"` : "",
-      // helps main.js decide behavior
+      slot ? `data-slot="${slot}"` : "",
       `data-editmode="${editMode ? "1" : "0"}"`,
       `data-started="${isStarted ? "1" : "0"}"`,
     ]
@@ -136,13 +142,14 @@ export function renderTodaysSplit(el, state) {
       .join(" ");
 
     return `
-      <button
+      <div
         class="todayRow
           ${active ? "active" : ""}
           ${isStarted ? "started" : ""}
           ${isDone ? "done" : ""}"
         ${dataAttrs}
-        style="text-align:left;"
+        role="button"
+        tabindex="0"
       >
         <div class="rowTop">
           <div class="rowName">${exObj.name}</div>
@@ -153,13 +160,15 @@ export function renderTodaysSplit(el, state) {
           </div>
         </div>
 
-        <div class="rowLink">${editMode ? (isExtra ? "Extra" : swapDisabled ? "Locked" : "Swap") : "Log sets"}</div>
+        <div class="rowLink">${
+          editMode ? (isExtra ? "Extra" : swapDisabled ? "Locked" : "Swap") : "Log sets"
+        }</div>
 
         <div class="rowBottom">
           <div class="rowMin">Min ${minSets} sets</div>
           <div class="rowLbs">${st.lbs} lbs logged</div>
         </div>
-      </button>
+      </div>
     `;
   };
 
@@ -169,19 +178,21 @@ export function renderTodaysSplit(el, state) {
         <div>
           <div class="todayTitle">${meta.title}</div>
           <div class="todayDesc">${meta.desc}</div>
-          ${editMode ? `<div class="todayHint">Edit mode: swap/remove is blocked once an exercise has logged sets.</div>` : ""}
+          ${
+            editMode
+              ? `<div class="todayHint">Edit mode: swap/remove is blocked once an exercise has logged sets.</div>`
+              : ""
+          }
         </div>
 
         <div style="display:flex; gap:10px; align-items:center;">
-          <button class="btn btnGhost" id="btnNextSplit">NEXT OPTION</button>
-          <button class="btn btnGhost" id="btnToggleEdit">${editBtnLabel}</button>
+          <button class="btn btnGhost" id="btnNextSplit" type="button">NEXT OPTION</button>
+          <button class="btn btnGhost" id="btnToggleEdit" type="button">${editBtnLabel}</button>
         </div>
       </div>
 
       <div class="todayList">
-        ${topFive
-          .map((exObj, i) => renderRow(exObj, { slot: i + 1, isExtra: false }))
-          .join("")}
+        ${topFive.map((exObj, i) => renderRow(exObj, { slot: i + 1, isExtra: false })).join("")}
 
         ${
           extras.length
@@ -195,7 +206,7 @@ export function renderTodaysSplit(el, state) {
           allDone
             ? `
               <div style="margin-top:10px;">
-                <button class="btn" id="btnAddExercise">+ Add exercise</button>
+                <button class="btn" id="btnAddExercise" type="button">+ Add exercise</button>
               </div>
             `
             : ""
@@ -204,65 +215,63 @@ export function renderTodaysSplit(el, state) {
     </div>
 
     <div style="margin-top:14px; display:flex; gap:10px; flex-wrap: wrap;">
-      <button class="btn" id="btnOpenSplit">View</button>
-      <button class="btn btnPrimary" id="btnCompleteSession" ${completedToday ? "disabled" : ""}>
+      <button class="btn" id="btnOpenSplit" type="button">View</button>
+      <button class="btn btnPrimary" id="btnCompleteSession" type="button" ${completedToday ? "disabled" : ""}>
         ${completedToday ? "Completed Today ✅" : "Complete Session"}
       </button>
     </div>
   `;
 
+  // -------------------------
   // Row click behavior
-  el.querySelectorAll("[data-exid]").forEach((btn) => {
-    btn.onclick = () => {
-      const exName = btn.getAttribute("data-ex") || "Exercise";
-      const exId = btn.getAttribute("data-exid") || "";
-      const suggestedReps = Number(btn.getAttribute("data-sreps") || 0) || null;
+  // -------------------------
+  const activateRow = (row) => {
+    const exName = row.getAttribute("data-ex") || "Exercise";
+    const exId = row.getAttribute("data-exid") || "";
+    const suggestedReps = Number(row.getAttribute("data-sreps") || 0) || null;
 
-      const isEdit = btn.getAttribute("data-editmode") === "1";
-      const started = btn.getAttribute("data-started") === "1";
-      const isExtra = btn.getAttribute("data-extra") === "1";
-      const slot = Number(btn.getAttribute("data-slot") || 0);
+    const isEdit = row.getAttribute("data-editmode") === "1";
+    const started = row.getAttribute("data-started") === "1";
+    const isExtra = row.getAttribute("data-extra") === "1";
+    const slot = Number(row.getAttribute("data-slot") || 0);
 
-      // persist selection (for highlight)
-      el.setAttribute("data-selected-ex", exName);
-      el.setAttribute("data-selected-exid", exId);
+    // persist selection (for highlight)
+    el.setAttribute("data-selected-ex", exName);
+    el.setAttribute("data-selected-exid", exId);
 
-      // In edit mode:
-      // - base rows open picker (if not started)
-      // - extras: do nothing (remove uses X)
-      if (isEdit) {
-        if (!isExtra && !started && slot > 0) {
-          el.dispatchEvent(
-            new CustomEvent("ip:swapExercise", {
-              bubbles: true,
-              detail: {
-                dayId: todayId,
-                splitName: plan.splitName,
-                slot, // 1-based
-                fromExerciseId: exId,
-              },
-            })
-          );
-        }
-        return;
+    if (isEdit) {
+      // base rows open picker (if not started)
+      if (!isExtra && !started && slot > 0) {
+        el.dispatchEvent(
+          new CustomEvent("ip:swapExercise", {
+            bubbles: true,
+            detail: { dayId: todayId, splitName: plan.splitName, slot, fromExerciseId: exId },
+          })
+        );
       }
+      return;
+    }
 
-      // Normal mode: open focus modal
-      el.dispatchEvent(
-        new CustomEvent("ip:focusExercise", {
-          bubbles: true,
-          detail: {
-            exercise: exName,
-            exerciseId: exId,
-            origin: "recommended",
-            suggestedReps,
-          },
-        })
-      );
-    };
+    // Normal mode: open focus modal
+    el.dispatchEvent(
+      new CustomEvent("ip:focusExercise", {
+        bubbles: true,
+        detail: { exercise: exName, exerciseId: exId, origin: "recommended", suggestedReps },
+      })
+    );
+  };
+
+  el.querySelectorAll(".todayRow[data-exid]").forEach((row) => {
+    row.addEventListener("click", () => activateRow(row));
+    row.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        activateRow(row);
+      }
+    });
   });
 
-  // Swap buttons (↻) — redundant with row click, but more obvious UX
+  // Swap buttons (↻)
   el.querySelectorAll("[data-swap-slot]").forEach((b) => {
     b.onclick = (ev) => {
       ev.stopPropagation();
@@ -301,7 +310,9 @@ export function renderTodaysSplit(el, state) {
   const btnAdd = el.querySelector("#btnAddExercise");
   if (btnAdd) {
     btnAdd.onclick = () => {
-      el.dispatchEvent(new CustomEvent("ip:addExtraExercise", { bubbles: true, detail: { dayId: todayId } }));
+      el.dispatchEvent(
+        new CustomEvent("ip:addExtraExercise", { bubbles: true, detail: { dayId: todayId } })
+      );
     };
   }
 

@@ -1,19 +1,20 @@
+// src/features/volume/volumeCard.js
 import { getWeekId } from "../../state/time.js";
 import { monthKey } from "../../state/month.js";
-import { selectCurrentWeekGauge, selectWeekCompetition } from "../../state/selectors.js";
+import { selectCurrentWeekGauge } from "../../state/selectors.js";
 
 /*
-  - WEEK view: milestone gauge (vehicle progression) + self-competition
-  - MONTH view: ratio compare
-  - Expects (el, state, view)
+  Apple polish:
+  - Week tab: vehicle hero (current → next), soft glass, depth, micro animation
+  - Month tab: pure analytics, same polish but no vehicles
+  - Persists selected tab using el.dataset.volView
 */
 
-// ===========================
-// Helpers
-// ===========================
 function sumVolumeForWeek(sets, weekId) {
   return sets.reduce((sum, s) => {
-    const sWeek = s.weekId ?? getWeekId(new Date(s.dayId + "T00:00:00"));
+    const sWeek =
+      s.weekId ??
+      getWeekId(new Date(String(s.dayId || "") + "T00:00:00"));
     if (sWeek !== weekId) return sum;
     return sum + (Number(s.reps) || 0) * (Number(s.weight) || 0);
   }, 0);
@@ -21,7 +22,8 @@ function sumVolumeForWeek(sets, weekId) {
 
 function sumVolumeForMonth(sets, mKey) {
   return sets.reduce((sum, s) => {
-    const sMonth = monthKey(new Date(s.ts ?? s.dayId));
+    const ts = s.ts ?? Date.parse(String(s.dayId || "")) ?? 0;
+    const sMonth = monthKey(new Date(ts));
     if (sMonth !== mKey) return sum;
     return sum + (Number(s.reps) || 0) * (Number(s.weight) || 0);
   }, 0);
@@ -33,20 +35,80 @@ function pct(current, baseline) {
   return Math.min(2, raw);
 }
 
-function fmtSigned(n) {
-  const v = Math.round(Number(n) || 0);
-  if (v === 0) return "0";
-  return (v > 0 ? "+" : "−") + Math.abs(v).toLocaleString();
+function fmt(n) {
+  return Math.round(Number(n) || 0).toLocaleString();
 }
 
-// ===========================
-// Main Renderer
-// ===========================
-export function renderWeeklyVolume(el, state, view = "week") {
-  const now = new Date();
-  const sets = state.log.sets || [];
+// label -> asset path (optional)
+function vehicleAsset(label = "") {
+  const key = String(label || "").trim().toLowerCase();
+  const map = {
+    "dirt bike": "assets/vehicles/dirt-bike.png",
+    "motorcycle": "assets/vehicles/motorcycle.png",
+    "sedan": "assets/vehicles/sedan.png",
+    "suv": "assets/vehicles/suv.png",
+    "pickup": "assets/vehicles/pickup.png",
+    "delivery truck": "assets/vehicles/delivery-truck.png",
+    "box truck": "assets/vehicles/box-truck.png",
+    "semi truck": "assets/vehicles/semi-truck.png",
+    "fire truck": "assets/vehicles/fire-truck.png",
+    "battle tank": "assets/vehicles/battle-tank.png",
+  };
+  return map[key] || null;
+}
 
-  const currentWeek = state.streak.weekId;
+function vehicleEmoji(label = "") {
+  const key = String(label || "").trim().toLowerCase();
+  const map = {
+    "dirt bike": "🏍️",
+    "motorcycle": "🏍️",
+    "sedan": "🚗",
+    "suv": "🚙",
+    "pickup": "🛻",
+    "delivery truck": "🚚",
+    "box truck": "🚚",
+    "semi truck": "🚛",
+    "fire truck": "🚒",
+    "battle tank": "🪖",
+  };
+  return map[key] || "🏁";
+}
+
+function vehicleChipHtml(label, kind = "current") {
+  const src = vehicleAsset(label);
+  const emoji = vehicleEmoji(label);
+  const isNext = kind === "next";
+
+  return `
+    <div class="ipVeh ${isNext ? "isNext" : "isCurrent"}">
+      ${
+        src
+          ? `
+            <img
+              class="ipVehImg"
+              src="${src}"
+              alt="${label}"
+              onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+            />
+            <div class="ipVehEmoji" style="display:none;">${emoji}</div>
+          `
+          : `<div class="ipVehEmoji">${emoji}</div>`
+      }
+      <div class="ipVehLabel">${label || "Milestone"}</div>
+    </div>
+  `;
+}
+
+export function renderWeeklyVolume(el, state, view = null) {
+  if (!el) return;
+
+  const remembered = el.dataset.volView || "week";
+  const activeView = view || remembered;
+
+  const now = new Date();
+  const sets = state?.log?.sets || [];
+
+  const currentWeek = state?.streak?.weekId || getWeekId(now);
   const lastWeek = getWeekId(new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000));
 
   const currentMonth = monthKey(now);
@@ -59,107 +121,98 @@ export function renderWeeklyVolume(el, state, view = "week") {
   let widthPct = 0;
   let extraMeta = "";
 
-  // NEW: self-competition lines for week view
-  let compLine1 = "";
-  let compLine2 = "";
-
-  // ===========================
-  // WEEK VIEW (Milestone Gauge)
-  // ===========================
-  if (view === "week") {
-    const gauge = selectCurrentWeekGauge(state);
-    const comp = selectWeekCompetition(state);
-
-    currentVol = gauge.volume;
+  // WEEK (milestone gauge)
+  let gauge = null;
+  if (activeView === "week") {
+    gauge = selectCurrentWeekGauge(state);
+    currentVol = gauge.volume || 0;
     baselineVol = sumVolumeForWeek(sets, lastWeek);
-
     widthPct = Math.round((gauge.fill || 0) * 100);
 
     metaLeft = gauge.next
-      ? `${gauge.remainingToNext.toLocaleString()} lbs to ${gauge.next.label}`
-      : `MAXED: ${gauge.prev.label}`;
+      ? `${fmt(gauge.remainingToNext)} lbs to ${gauge.next.label}`
+      : `MAXED: ${gauge.prev?.label || "MAX"}`;
 
     metaRight = gauge.isMaxed
-      ? `+${(gauge.overflow || 0).toLocaleString()} lbs`
-      : gauge.next?.label || "";
-
-    // Self-competition (ugly but motivating)
-    const last = Math.round(comp.last || 0);
-    const best = Math.round(comp.best || 0);
-    const delta = Math.round(comp.delta || 0);
-    const pctBest = best > 0 ? Math.round((comp.current / best) * 100) : 0;
-
-    compLine1 = `vs last week: ${last.toLocaleString()} lbs (${fmtSigned(delta)})`;
-    compLine2 = best > 0
-      ? `best week: ${best.toLocaleString()} lbs (${pctBest}% of best)`
-      : `best week: —`;
+      ? `+${fmt(gauge.overflow)} lbs`
+      : `${gauge.next?.label || ""}`;
 
     extraMeta = `Week ${currentWeek}`;
-  }
-
-  // ===========================
-  // MONTH VIEW (Ratio Compare)
-  // ===========================
-  else {
+  } else {
+    // MONTH (ratio compare)
     currentVol = sumVolumeForMonth(sets, currentMonth);
     baselineVol = sumVolumeForMonth(sets, lastMonth);
 
     const p = pct(currentVol, baselineVol);
-    widthPct = Math.round(p * 50); // 2.0x maps to 100%
+    widthPct = Math.round(p * 50);
 
-    const ratio = (currentVol / Math.max(1, baselineVol));
-
-    metaLeft = `vs last month: ${Math.round(baselineVol).toLocaleString()} lbs`;
+    const ratio = currentVol / Math.max(1, baselineVol);
+    metaLeft = `vs last month: ${fmt(baselineVol)} lbs`;
     metaRight = `${ratio.toFixed(2)}x`;
-
     extraMeta = `Month ${currentMonth}`;
   }
 
-  // ===========================
-  // Render
-  // ===========================
-  el.innerHTML = `
-    <h3>${view === "week" ? "Weekly Volume" : "Monthly Volume"}</h3>
+  // Vehicles only on week view
+  let vehicleRow = "";
+  if (activeView === "week") {
+    const currentLabel = gauge?.prev?.label || "Current";
+    const nextLabel = gauge?.next?.label || (gauge?.isMaxed ? "MAX" : "Next");
 
-    <div class="row">
-      <div class="big">${Math.round(currentVol).toLocaleString()} lbs</div>
-
-      <div style="display:flex; gap:6px;">
-        <button class="pill ${view === "week" ? "active" : ""}" id="volWeek">Week</button>
-        <button class="pill ${view === "month" ? "active" : ""}" id="volMonth">Month</button>
+    vehicleRow = `
+      <div class="ipVehRow">
+        ${vehicleChipHtml(currentLabel, "current")}
+        <div class="ipVehArrow">→</div>
+        ${vehicleChipHtml(nextLabel, "next")}
       </div>
-    </div>
+    `;
+  }
 
-    <div class="barWrap" aria-label="Volume progress bar">
-      <div class="barFill" style="width: ${widthPct}%;"></div>
-    </div>
+  el.innerHTML = `
+    <div class="card ipGlass">
+      <div class="row ipTopRow">
+        <div>
+          <div class="cardTitle">Weekly Volume</div>
+          <div class="ipBig">${fmt(currentVol)} <span class="ipUnit">lbs</span></div>
+        </div>
 
-    <div class="barMeta">
-      <div>${metaLeft}</div>
-      <div>${metaRight}</div>
-    </div>
+        <div class="ipSeg">
+          <button class="pill ${activeView === "week" ? "active" : ""}" id="volWeek">Week</button>
+          <button class="pill ${activeView === "month" ? "active" : ""}" id="volMonth">Month</button>
+        </div>
+      </div>
 
-    ${
-      view === "week"
-        ? `
-          <div style="margin-top:8px; font-size:12px; color: var(--muted); display:flex; justify-content:space-between; gap:10px;">
-            <div>${compLine1}</div>
-            <div>${compLine2}</div>
-          </div>
-        `
-        : ""
-    }
+      <div class="ipBarWrap" aria-label="Volume progress bar">
+        <div class="ipBarFill" style="width:${widthPct}%;"></div>
+        <div class="ipBarShine"></div>
+      </div>
 
-    <div style="margin-top:10px; color: var(--muted); font-size: 12px;">
-      ${extraMeta}
+      <div class="ipMeta">
+        <div class="ipMetaLeft">${metaLeft}</div>
+        <div class="ipMetaRight">${metaRight}</div>
+      </div>
+
+      ${vehicleRow}
+
+      <div class="ipFoot">${extraMeta}</div>
     </div>
   `;
 
+  // Micro-animation: restart fill transition on update
+  const fill = el.querySelector(".ipBarFill");
+  if (fill) {
+    fill.classList.remove("ipAnimate");
+    void fill.offsetWidth;
+    fill.classList.add("ipAnimate");
+  }
+
   el.querySelector("#volWeek")?.addEventListener("click", () => {
+    el.dataset.volView = "week";
     renderWeeklyVolume(el, state, "week");
   });
 
   el.querySelector("#volMonth")?.addEventListener("click", () => {
+    el.dataset.volView = "month";
     renderWeeklyVolume(el, state, "month");
   });
 }
+
