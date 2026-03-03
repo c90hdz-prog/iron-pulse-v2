@@ -4,20 +4,44 @@ import { setAfterburnForDay } from "../../state/actions.js";
 
 export const MODAL_AFTERBURN = "AFTERBURN";
 
-export function renderAfterburnCard(el, onOpen) {
+export function renderAfterburnCard(el, state, onOpen) {
   if (!el) return;
+
+  const todayId = dayKey(new Date());
+  const completedSession = state?.streak?.lastSessionDay === todayId;
+  const afterburnDone = !!state?.log?.afterburnByDay?.[todayId];
+
+  let desc = "Quick finisher to lock in the day.";
+  let label = "Open";
+  let disabled = false;
+
+  if (!completedSession) {
+    desc = "Complete your session to unlock Afterburn.";
+    label = "Locked";
+    disabled = true;
+  } else if (afterburnDone) {
+    desc = "Completed for today ✅";
+    label = "Completed";
+    disabled = true;
+  }
+
   el.innerHTML = `
     <div class="card">
       <div class="cardTitle">Afterburn</div>
       <div style="margin-top:6px; color: var(--muted); font-size: 12px;">
-        Quick finisher to lock in the day.
+        ${desc}
       </div>
       <div style="display:flex; gap:10px; margin-top:12px;">
-        <button class="btn btnPrimary" id="btnAfterburnOpen">Open</button>
+        <button class="btn btnPrimary" id="btnAfterburnOpen" ${disabled ? "disabled" : ""}>
+          ${label}
+        </button>
       </div>
     </div>
   `;
-  el.querySelector("#btnAfterburnOpen")?.addEventListener("click", () => onOpen?.());
+
+  if (!disabled) {
+    el.querySelector("#btnAfterburnOpen")?.addEventListener("click", () => onOpen?.());
+  }
 }
 
 export function afterburnModalHtml(state) {

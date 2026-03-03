@@ -214,9 +214,8 @@ export function renderTodaysSplit(el, state) {
       </div>
     </div>
 
-    <div style="margin-top:14px; display:flex; gap:10px; flex-wrap: wrap;">
-      <button class="btn" id="btnOpenSplit" type="button">View</button>
-      <button class="btn btnPrimary" id="btnCompleteSession" type="button" ${completedToday ? "disabled" : ""}>
+    <div style="margin-top:14px; display:flex; justify-content:center;">
+      <button class="btn btnPrimary" id="btnCompleteSession" ${completedToday ? "disabled" : ""} style="min-width:220px;">
         ${completedToday ? "Completed Today ✅" : "Complete Session"}
       </button>
     </div>

@@ -227,6 +227,69 @@ function isLockedToday(state) {
   return state?.streak?.lastSessionDay === todayId;
 }
 
+
+
+// -------------------------
+// Confirm Complete Session modal
+// -------------------------
+const MODAL_CONFIRM_COMPLETE = "CONFIRM_COMPLETE_SESSION";
+
+function confirmCompleteHtml(payload = {}) {
+  const splitName = payload?.splitName || "Session";
+  return `
+    <div class="modal" role="dialog" aria-modal="true">
+      <div class="modalHeader">
+        <div class="modalTitle">Done with workout?</div>
+        <button class="iconBtn" data-close>✕</button>
+      </div>
+
+      <div class="modalBody">
+        <div class="big">Complete today?</div>
+        <div style="margin-top:8px; color: var(--muted); font-size: 12px; line-height: 1.35;">
+          If you complete, today becomes <b>locked</b> (no more logging, swapping, or edits).
+        </div>
+
+        <div style="margin-top:10px; color: var(--muted); font-size: 12px;">
+          Session: <b>${splitName}</b>
+        </div>
+      </div>
+
+      <div class="modalActions">
+        <button class="btn" id="btnConfirmCancel">Not yet</button>
+        <button class="btn btnPrimary" id="btnConfirmComplete">Yes, complete</button>
+      </div>
+    </div>
+  `;
+}
+
+
+function performCompleteSession() {
+  const before = store.getState().streak.lastSessionDay;
+
+  store.dispatch(ensureCurrentWeek());
+
+  const splitName = els.todaysSplit?.getAttribute("data-split-name") || "Session";
+  store.dispatch(completeSession({ splitName }));
+
+  const after = store.getState().streak.lastSessionDay;
+
+  if (before !== after) {
+    toast("Session complete ✅");
+    haptic("success");
+
+    requestAnimationFrame(() => {
+      const btn = els.todaysSplit?.querySelector("#btnCompleteSession");
+      if (!btn) return;
+      btn.classList.remove("pulseWin");
+      void btn.offsetWidth;
+      btn.classList.add("pulseWin");
+      setTimeout(() => btn.classList.remove("pulseWin"), 700);
+    });
+  } else {
+    toast("Already completed today");
+    haptic("light");
+  }
+}
 // -------------------------
 // Render loop
 // -------------------------
@@ -292,15 +355,25 @@ function render() {
   renderHeatmapCard(els.heatmap, state);
   renderTodaysSplit(els.todaysSplit, state);
   renderTodaySummary(els.todaySummary, selectTodaySummary(state));
-  renderAfterburnCard(els.afterburn, () => {
+  renderAfterburnCard(els.afterburn, state, () => {
     const todayId = dayKey(new Date());
-    const completed = store.getState()?.streak?.lastSessionDay === todayId;
+    const st = store.getState();
+
+    const completed = st?.streak?.lastSessionDay === todayId;
     if (!completed) {
       toast("Complete your session first ✅");
       haptic("light");
       smoothScrollTo(els.todaysSplit);
       return;
     }
+
+    const done = !!st?.log?.afterburnByDay?.[todayId];
+    if (done) {
+      toast("Afterburn already completed ✅");
+      haptic("light");
+      return;
+    }
+
     store.dispatch(openModal(MODAL_AFTERBURN));
   });
 
@@ -319,33 +392,22 @@ function render() {
   // --- Button wiring (SAFE: onclick overwrites each render) ---
 
   // Complete Session
+  // Complete Session (now asks for confirmation)
   const btnComplete = els.todaysSplit?.querySelector("#btnCompleteSession");
   if (btnComplete) {
     btnComplete.onclick = () => {
-      const before = store.getState().streak.lastSessionDay;
+      const todayId = dayKey(new Date());
 
-      store.dispatch(ensureCurrentWeek());
-
-      const splitName = els.todaysSplit.getAttribute("data-split-name") || "Session";
-      store.dispatch(completeSession({ splitName }));
-
-      const after = store.getState().streak.lastSessionDay;
-
-      if (before !== after) {
-        toast("Session complete ✅");
-        haptic("success");
-
-        requestAnimationFrame(() => {
-          const btn = els.todaysSplit.querySelector("#btnCompleteSession");
-          if (!btn) return;
-          btn.classList.remove("pulseWin");
-          void btn.offsetWidth;
-          btn.classList.add("pulseWin");
-          setTimeout(() => btn.classList.remove("pulseWin"), 700);
-        });
-      } else {
+      // If already completed, do nothing
+      if (store.getState()?.streak?.lastSessionDay === todayId) {
         toast("Already completed today");
+        haptic("light");
+        return;
       }
+
+      const splitName = els.todaysSplit?.getAttribute("data-split-name") || "Session";
+      store.dispatch(openModal(MODAL_CONFIRM_COMPLETE, { splitName }));
+      haptic("light");
     };
   }
 
@@ -391,6 +453,30 @@ function render() {
     return;
   }
 
+    if (modal.type === MODAL_CONFIRM_COMPLETE) {
+    renderModalRoot(
+      els.modalRoot,
+      confirmCompleteHtml(modal.payload),
+      () => store.dispatch(closeModal())
+    );
+
+    const overlay = els.modalRoot.firstElementChild;
+    overlay?.querySelectorAll("[data-close]").forEach((btn) =>
+      btn.addEventListener("click", () => store.dispatch(closeModal()))
+    );
+
+    overlay?.querySelector("#btnConfirmCancel")?.addEventListener("click", () => {
+      store.dispatch(closeModal());
+    });
+
+    overlay?.querySelector("#btnConfirmComplete")?.addEventListener("click", () => {
+      store.dispatch(closeModal());
+      performCompleteSession();
+    });
+
+    return;
+  }
+
   if (modal.type === MODAL_AFTERBURN) {
     renderModalRoot(
       els.modalRoot,
@@ -417,7 +503,7 @@ render();
 
 
 // Settings placeholder
-els.btnSettings.addEventListener("click", () => {
+els.btnSettings?.addEventListener("click", () => {
   toast("Settings modal tomorrow ✅");
 });
 
@@ -919,7 +1005,7 @@ function updateCTA(state) {
 
       // review
       // For now: Today Summary (we can change later to Weekly Volume if you prefer)
-      smoothScrollTo(els.todaySummary || els.weeklyVolume);
+      smoothScrollTo(els.weeklyVolume);
     };
   }
 }

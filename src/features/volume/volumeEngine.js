@@ -1,13 +1,14 @@
 export const VOLUME_MILESTONES = [
-  { id: "skateboard", label: "Skateboard", lbs: 2000 },
-  { id: "dirtbike", label: "Dirt Bike", lbs: 5000 },
-  { id: "sedan", label: "Sedan", lbs: 8000 },
-  { id: "pickup", label: "Pickup Truck", lbs: 12000 },
-  { id: "suv", label: "SUV", lbs: 16000 },
-  { id: "van", label: "Van", lbs: 20000 },
-  { id: "sports", label: "Sports Car", lbs: 24000 },
-  { id: "ambulance", label: "Ambulance", lbs: 30000 },
-  { id: "bus", label: "City Bus", lbs: 40000 },
+  { id: "dirtbike", label: "Dirt Bike", lbs: 10000 },
+  { id: "sedan", label: "Sedan", lbs: 25000 },
+  { id: "pickup", label: "Pickup Truck", lbs: 40000 },
+  { id: "suv", label: "SUV", lbs: 60000 },
+  { id: "bus", label: "City Bus", lbs: 80000 },
+  { id: "firetruck", label: "Fire Truck", lbs: 100000 },
+  { id: "cargotruck", label: "Cargo Truck", lbs: 125000 },
+  { id: "helicopter", label: "Helicopter", lbs: 150000 },
+  { id: "privatejet", label: "Private Jet", lbs: 175000 },
+  { id: "interstellar", label: "Interstellar", lbs: 200000 },
 ];
 
 export function calcSetVolume(set) {
