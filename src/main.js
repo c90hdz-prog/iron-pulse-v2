@@ -81,10 +81,17 @@ const els = {
 
 els.todaysSplit?.addEventListener("ip:focusExercise", (e) => {
   store.dispatch(ensureCurrentWeek());
+
+  // 🔒 Lock: once completed today, no more logging/editing
+  if (isLockedToday(store.getState())) {
+    toast("Session already completed today ✅");
+    haptic("light");
+    return;
+  }
+
   const { exercise, exerciseId, suggestedReps } = e.detail || {};
   if (!exerciseId) return;
 
-  // Mark origin so logged sets are "recommended"
   els.todaysSplit.setAttribute("data-origin", "recommended");
 
   store.dispatch(
@@ -98,16 +105,27 @@ els.todaysSplit?.addEventListener("ip:focusExercise", (e) => {
 });
 
 els.todaysSplit?.addEventListener("ip:toggleEditMode", (e) => {
+  if (isLockedToday(store.getState())) {
+    toast("Session locked for today ✅");
+    haptic("light");
+    return;
+  }
   const todayId = e.detail?.dayId || dayKey(new Date());
   store.dispatch(toggleEditModeForDay(todayId));
   haptic("light");
 });
 
 els.todaysSplit?.addEventListener("ip:swapExercise", (e) => {
+  if (isLockedToday(store.getState())) {
+    toast("Session locked for today ✅");
+    haptic("light");
+    return;
+  }
+
   const { dayId, splitName, slot, fromExerciseId } = e.detail || {};
   if (!dayId || !splitName || !slot || !fromExerciseId) return;
 
-  // open picker modal
+  
   store.dispatch(
     openModal(MODAL_EXERCISE_PICKER, {
       mode: "swap",
@@ -121,6 +139,12 @@ els.todaysSplit?.addEventListener("ip:swapExercise", (e) => {
 });
 
 els.todaysSplit?.addEventListener("ip:addExtraExercise", (e) => {
+  if (isLockedToday(store.getState())) {
+    toast("Session locked for today ✅");
+    haptic("light");
+    return;
+  }
+
   const dayId = e.detail?.dayId || dayKey(new Date());
   const splitName = els.todaysSplit?.getAttribute("data-split-name") || "split";
 
@@ -135,10 +159,16 @@ els.todaysSplit?.addEventListener("ip:addExtraExercise", (e) => {
 });
 
 els.todaysSplit?.addEventListener("ip:removeExtraExercise", (e) => {
+  if (isLockedToday(store.getState())) {
+    toast("Session locked for today ✅");
+    haptic("light");
+    return;
+  }
+
   const { dayId, exerciseId } = e.detail || {};
   if (!dayId || !exerciseId) return;
 
-  // reducer hard-guards if logged
+
   store.dispatch(removeExtraExercise({ dayId, exerciseId }));
   toast("Removed");
   haptic("light");
@@ -146,6 +176,12 @@ els.todaysSplit?.addEventListener("ip:removeExtraExercise", (e) => {
 
 // Next option (ONLY cycle button)
 els.todaysSplit?.addEventListener("ip:nextSplit", () => {
+  if (isLockedToday(store.getState())) {
+    toast("Session locked for today ✅");
+    haptic("light");
+    return;
+  }
+
   const todayId = dayKey(new Date());
   const sets = Array.isArray(store.getState()?.log?.sets) ? store.getState().log.sets : [];
 
@@ -185,6 +221,12 @@ els.goalCard?.addEventListener("ip:skipWeeklyGoalSetup", () => {
 els.heatmap?.addEventListener("ip:toggleHeatmap", () => {
   store.dispatch(toggleHeatmapCollapse());
 });
+
+function isLockedToday(state) {
+  const todayId = dayKey(new Date());
+  return state?.streak?.lastSessionDay === todayId;
+}
+
 // -------------------------
 // Render loop
 // -------------------------
@@ -243,14 +285,27 @@ function render() {
     if (d !== todayId) store.dispatch(clearEditModeForDay(d));
   });
 
-  // --- Cards ---
+
   // --- Cards ---
   renderStreakBanner(els.streakBanner, state);
   renderWeeklyVolume(els.weeklyVolume, state);
   renderHeatmapCard(els.heatmap, state);
   renderTodaysSplit(els.todaysSplit, state);
   renderTodaySummary(els.todaySummary, selectTodaySummary(state));
-  renderAfterburnCard(els.afterburn, () => store.dispatch(openModal(MODAL_AFTERBURN)));
+  renderAfterburnCard(els.afterburn, () => {
+    const todayId = dayKey(new Date());
+    const completed = store.getState()?.streak?.lastSessionDay === todayId;
+    if (!completed) {
+      toast("Complete your session first ✅");
+      haptic("light");
+      smoothScrollTo(els.todaysSplit);
+      return;
+    }
+    store.dispatch(openModal(MODAL_AFTERBURN));
+  });
+
+  // ✅ Update the big CTA (Start/Continue/Afterburn/Review + scroll behavior)
+  updateCTA(state);
 
   // Render goal card (it will *appear* top or bottom because we moved the container above)
   renderGoalCard(els.goalCard, state, () => {
@@ -360,11 +415,6 @@ function render() {
 store.subscribe(render);
 render();
 
-// CTA
-els.btnCTA.addEventListener("click", () => {
-  store.dispatch(ensureCurrentWeek());
-  store.dispatch(openModal(MODAL_LOG_SET));
-});
 
 // Settings placeholder
 els.btnSettings.addEventListener("click", () => {
@@ -776,7 +826,103 @@ function bindExerciseFocusModal(payload) {
   renderTimer();
 }
 
+function smoothScrollTo(targetEl) {
+  if (!targetEl) return;
+  targetEl.scrollIntoView({ behavior: "smooth", block: "start" });
+}
 
+function hasAnySetsToday(state) {
+  const todayId = dayKey(new Date());
+  const sets = Array.isArray(state?.log?.sets) ? state.log.sets : [];
+  return sets.some((s) => s?.dayId === todayId);
+}
+
+function isSessionCompletedToday(state) {
+  const todayId = dayKey(new Date());
+  return state?.streak?.lastSessionDay === todayId;
+}
+
+function isAfterburnDoneToday(state) {
+  const todayId = dayKey(new Date());
+  const completed = state?.streak?.lastSessionDay === todayId;
+  if (!completed) return false; // ✅ can't be "done" if session not completed
+  return !!state?.log?.afterburnByDay?.[todayId];
+}
+
+function scrollToNextIncompleteExerciseOrSplit() {
+  const splitEl = els.todaysSplit;
+  if (!splitEl) return;
+
+  // Look for the first exercise row that is NOT done yet.
+  // Your rows are `.todayRow` and get class `.done` when min sets reached.
+  const rows = Array.from(splitEl.querySelectorAll(".todayRow"));
+  const next = rows.find((r) => !r.classList.contains("done"));
+
+  if (next) {
+    next.scrollIntoView({ behavior: "smooth", block: "center" });
+  } else {
+    // If everything is done (or no rows found), scroll to the split card
+    smoothScrollTo(splitEl);
+  }
+}
+
+function updateCTA(state) {
+  const started = hasAnySetsToday(state);
+  const completed = isSessionCompletedToday(state);
+  const afterburnDone = isAfterburnDoneToday(state);
+
+  // Decide CTA mode
+  // ✅ Golden rule:
+  // Until "Complete Session" is pressed, CTA never becomes Afterburn/Review.
+  let mode = "start";
+
+  if (!completed) {
+    mode = started ? "continue" : "start";
+  } else {
+    mode = afterburnDone ? "review" : "afterburn";
+  }
+
+  // Label
+  const label =
+    mode === "start" ? "Start Today" :
+    mode === "continue" ? "Continue" :
+    mode === "afterburn" ? "Afterburn" :
+    "Review";
+
+  // Set button label + remember mode
+  if (els.btnCTA) {
+    els.btnCTA.textContent = label;
+    els.btnCTA.dataset.mode = mode;
+
+    // Wire click safely (overwrite each render)
+    els.btnCTA.onclick = () => {
+      store.dispatch(ensureCurrentWeek());
+
+      const m = els.btnCTA.dataset.mode || "start";
+
+      if (m === "start") {
+        smoothScrollTo(els.todaysSplit);
+        return;
+      }
+
+      if (m === "continue") {
+        // Scroll to next exercise not completed yet
+        scrollToNextIncompleteExerciseOrSplit();
+        return;
+      }
+
+      if (m === "afterburn") {
+        // Scroll to Afterburn section (no popup here)
+        smoothScrollTo(els.afterburn);
+        return;
+      }
+
+      // review
+      // For now: Today Summary (we can change later to Weekly Volume if you prefer)
+      smoothScrollTo(els.todaySummary || els.weeklyVolume);
+    };
+  }
+}
 // Optional: register service worker
 // Register SW only in production (prevents Live Server cache weirdness)
 if ("serviceWorker" in navigator) {
