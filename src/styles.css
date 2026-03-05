@@ -1108,6 +1108,8 @@ button.btn.active:active {
     width: 120px;
     height: auto;
     object-fit: contain;
+    display: block;
+    backface-visibility: hidden;
 }
 
 .ipVehEmoji {

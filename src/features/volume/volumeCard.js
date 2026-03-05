@@ -4,12 +4,7 @@ import { monthKey } from "../../state/month.js";
 import { selectCurrentWeekGauge } from "../../state/selectors.js";
 import { getVehicleProgress, getVehicleImgSrc } from "../vehicles/vehicleProgress.js";
 
-/*
-  Apple polish:
-  - Week tab: vehicle hero (current → next), soft glass, depth, micro animation
-  - Month tab: pure analytics, same polish but no vehicles
-  - Persists selected tab using el.dataset.volView
-*/
+
 
 function sumVolumeForWeek(sets, weekId) {
   return sets.reduce((sum, s) => {
@@ -40,7 +35,7 @@ function fmt(n) {
   return Math.round(Number(n) || 0).toLocaleString();
 }
 
-// label -> asset path (optional)
+
 
 function titleCase(str = "") {
   return String(str)
@@ -53,7 +48,7 @@ function titleCase(str = "") {
 function vehicleChipHtml(vehicleId, kind = "current") {
   const isNext = kind === "next";
   const src = getVehicleImgSrc(vehicleId);
-  const fallback = getVehicleImgSrc("sedan"); // you have sedan.png for sure
+  const fallback = getVehicleImgSrc("sedan");
 
   return `
     <div class="ipVeh ${isNext ? "isNext" : "isCurrent"}">
@@ -68,6 +63,7 @@ function vehicleChipHtml(vehicleId, kind = "current") {
     </div>
   `;
 }
+
 
 
 export function renderWeeklyVolume(el, state, view = null) {
@@ -91,11 +87,15 @@ export function renderWeeklyVolume(el, state, view = null) {
   let metaRight = "";
   let widthPct = 0;
   let extraMeta = "";
+  let vehicleRow = "";
+  let currentVehicleId = "";
+  let nextVehicleId = "";
 
-  // WEEK (milestone gauge)
-  let gauge = null;
+
+
+  
   if (activeView === "week") {
-    gauge = selectCurrentWeekGauge(state);
+    const gauge = selectCurrentWeekGauge(state);
     currentVol = gauge.volume || 0;
     baselineVol = sumVolumeForWeek(sets, lastWeek);
     widthPct = Math.round((gauge.fill || 0) * 100);
@@ -109,10 +109,26 @@ export function renderWeeklyVolume(el, state, view = null) {
       : `${gauge.next?.label || ""}`;
 
     extraMeta = `Week ${currentWeek}`;
+
+    const v = getVehicleProgress(currentVol);
+    currentVehicleId = v.currentId || "";
+    nextVehicleId = v.nextId || "interstellar";
+
+    vehicleRow = `
+      <div class="ipVehRow">
+        ${vehicleChipHtml(currentVehicleId, "current")}
+        <div class="ipVehArrow">→</div>
+        ${vehicleChipHtml(nextVehicleId, "next")}
+      </div>
+    `;
+
+
   } else {
-    // MONTH (ratio compare)
+
     currentVol = sumVolumeForMonth(sets, currentMonth);
     baselineVol = sumVolumeForMonth(sets, lastMonth);
+
+
 
     const p = pct(currentVol, baselineVol);
     widthPct = Math.round(p * 50);
@@ -123,22 +139,37 @@ export function renderWeeklyVolume(el, state, view = null) {
     extraMeta = `Month ${currentMonth}`;
   }
 
-  // Vehicles only on week view
-// Vehicles only on week view
-let vehicleRow = "";
-if (activeView === "week") {
-  const v = getVehicleProgress(currentVol); // currentVol is gauge.volume in week mode
-  const currentId = v.currentId;
-  const nextId = v.nextId || "interstellar";
+  // ✅ Signature: if same, don't rebuild DOM (prevents img flicker)
+  const sig = [
+    activeView,
+    currentVol,
+    widthPct,
+    metaLeft,
+    metaRight,
+    extraMeta,
+    currentVehicleId,
+    nextVehicleId,
+  ].join("|");
 
-  vehicleRow = `
-    <div class="ipVehRow">
-      ${vehicleChipHtml(currentId, "current")}
-      <div class="ipVehArrow">→</div>
-      ${vehicleChipHtml(nextId, "next")}
-    </div>
-  `;
-}
+  if (el.dataset.volSig === sig) {
+    // tiny updates only
+    const fill = el.querySelector(".ipBarFill");
+    if (fill) fill.style.width = `${widthPct}%`;
+
+    const left = el.querySelector(".ipMetaLeft");
+    const right = el.querySelector(".ipMetaRight");
+    const big = el.querySelector(".ipBig");
+    const foot = el.querySelector(".ipFoot");
+
+    if (big) big.innerHTML = `${fmt(currentVol)} <span class="ipUnit">lbs</span>`;
+    if (left) left.textContent = metaLeft;
+    if (right) right.textContent = metaRight;
+    if (foot) foot.textContent = extraMeta;
+
+    return;
+  }
+
+  el.dataset.volSig = sig;
 
   el.innerHTML = `
     <div class="card ipGlass">
@@ -164,19 +195,13 @@ if (activeView === "week") {
         <div class="ipMetaRight">${metaRight}</div>
       </div>
 
-      ${vehicleRow}
+      ${activeView === "week" ? vehicleRow : ""}
 
       <div class="ipFoot">${extraMeta}</div>
     </div>
   `;
 
-  // Micro-animation: restart fill transition on update
-  const fill = el.querySelector(".ipBarFill");
-  if (fill) {
-    fill.classList.remove("ipAnimate");
-    void fill.offsetWidth;
-    fill.classList.add("ipAnimate");
-  }
+
 
   el.querySelector("#volWeek")?.addEventListener("click", () => {
     el.dataset.volView = "week";
