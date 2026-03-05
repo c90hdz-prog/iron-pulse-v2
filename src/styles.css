@@ -60,11 +60,21 @@ body {
 }
 
 .logo {
-    width: 38px;
-    height: 38px;
+    width: 40px;
+    height: 40px;
     border-radius: 12px;
-    background: linear-gradient(135deg, var(--cta), var(--cta2));
-    box-shadow: 0 10px 30px rgba(255, 92, 119, 0.20);
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    font-weight: 800;
+    font-size: 16px;
+    letter-spacing: -0.5px;
+
+    color: rgb(0, 0, 0);
+
+    background: linear-gradient(135deg, #ff6b6b, #ff9a44);
 }
 
 .brandTitle {
@@ -1076,7 +1086,7 @@ button.btn.active:active {
     margin-top: 14px;
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
     gap: 10px;
     padding: 10px 8px;
     border-radius: 16px;
@@ -1095,8 +1105,8 @@ button.btn.active:active {
 }
 
 .ipVehImg {
-    width: 64px;
-    height: 64px;
+    width: 120px;
+    height: auto;
     object-fit: contain;
 }
 

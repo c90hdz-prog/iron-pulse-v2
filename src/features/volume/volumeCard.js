@@ -2,6 +2,7 @@
 import { getWeekId } from "../../state/time.js";
 import { monthKey } from "../../state/month.js";
 import { selectCurrentWeekGauge } from "../../state/selectors.js";
+import { getVehicleProgress, getVehicleImgSrc } from "../vehicles/vehicleProgress.js";
 
 /*
   Apple polish:
@@ -40,64 +41,34 @@ function fmt(n) {
 }
 
 // label -> asset path (optional)
-function vehicleAsset(label = "") {
-  const key = String(label || "").trim().toLowerCase();
-  const map = {
-    "dirt bike": "assets/vehicles/dirt-bike.png",
-    "motorcycle": "assets/vehicles/motorcycle.png",
-    "sedan": "assets/vehicles/sedan.png",
-    "suv": "assets/vehicles/suv.png",
-    "pickup": "assets/vehicles/pickup.png",
-    "delivery truck": "assets/vehicles/delivery-truck.png",
-    "box truck": "assets/vehicles/box-truck.png",
-    "semi truck": "assets/vehicles/semi-truck.png",
-    "fire truck": "assets/vehicles/fire-truck.png",
-    "battle tank": "assets/vehicles/battle-tank.png",
-  };
-  return map[key] || null;
+
+function titleCase(str = "") {
+  return String(str)
+    .replace(/([A-Z])/g, " $1")
+    .replace(/[_-]/g, " ")
+    .trim()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-function vehicleEmoji(label = "") {
-  const key = String(label || "").trim().toLowerCase();
-  const map = {
-    "dirt bike": "🏍️",
-    "motorcycle": "🏍️",
-    "sedan": "🚗",
-    "suv": "🚙",
-    "pickup": "🛻",
-    "delivery truck": "🚚",
-    "box truck": "🚚",
-    "semi truck": "🚛",
-    "fire truck": "🚒",
-    "battle tank": "🪖",
-  };
-  return map[key] || "🏁";
-}
-
-function vehicleChipHtml(label, kind = "current") {
-  const src = vehicleAsset(label);
-  const emoji = vehicleEmoji(label);
+function vehicleChipHtml(vehicleId, kind = "current") {
   const isNext = kind === "next";
+  const src = getVehicleImgSrc(vehicleId);
+  const fallback = getVehicleImgSrc("sedan"); // you have sedan.png for sure
 
   return `
     <div class="ipVeh ${isNext ? "isNext" : "isCurrent"}">
-      ${
-        src
-          ? `
-            <img
-              class="ipVehImg"
-              src="${src}"
-              alt="${label}"
-              onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
-            />
-            <div class="ipVehEmoji" style="display:none;">${emoji}</div>
-          `
-          : `<div class="ipVehEmoji">${emoji}</div>`
-      }
-      <div class="ipVehLabel">${label || "Milestone"}</div>
+      <img
+        class="ipVehImg"
+        src="${src}"
+        alt="${vehicleId}"
+        data-fallback="${fallback}"
+        onerror="const fb=this.dataset.fallback; if(fb && this.src!==fb) this.src=fb;"
+      />
+      <div class="ipVehLabel">${titleCase(vehicleId)}</div>
     </div>
   `;
 }
+
 
 export function renderWeeklyVolume(el, state, view = null) {
   if (!el) return;
@@ -153,19 +124,21 @@ export function renderWeeklyVolume(el, state, view = null) {
   }
 
   // Vehicles only on week view
-  let vehicleRow = "";
-  if (activeView === "week") {
-    const currentLabel = gauge?.prev?.label || "Current";
-    const nextLabel = gauge?.next?.label || (gauge?.isMaxed ? "MAX" : "Next");
+// Vehicles only on week view
+let vehicleRow = "";
+if (activeView === "week") {
+  const v = getVehicleProgress(currentVol); // currentVol is gauge.volume in week mode
+  const currentId = v.currentId;
+  const nextId = v.nextId || "interstellar";
 
-    vehicleRow = `
-      <div class="ipVehRow">
-        ${vehicleChipHtml(currentLabel, "current")}
-        <div class="ipVehArrow">→</div>
-        ${vehicleChipHtml(nextLabel, "next")}
-      </div>
-    `;
-  }
+  vehicleRow = `
+    <div class="ipVehRow">
+      ${vehicleChipHtml(currentId, "current")}
+      <div class="ipVehArrow">→</div>
+      ${vehicleChipHtml(nextId, "next")}
+    </div>
+  `;
+}
 
   el.innerHTML = `
     <div class="card ipGlass">
