@@ -66,7 +66,7 @@ export function getVehicleProgress(tonnage, thresholds = VEHICLE_THRESHOLDS) {
 }
 
 export function getVehicleImgSrc(vehicleId) {
-  return `/assets/icons/vehicles/${vehicleId}.webp`;
+  return `/iron-pulse-v2/assets/icons/vehicles/${vehicleId}.webp`;
 }
 // optional: safe fallback if a file isn't in the folder yet
 export function getSafeVehicleImgSrc(vehicleId) {
