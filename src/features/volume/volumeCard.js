@@ -4,7 +4,14 @@ import { monthKey } from "../../state/month.js";
 import { selectCurrentWeekGauge } from "../../state/selectors.js";
 import { getVehicleProgress, getVehicleImgSrc } from "../vehicles/vehicleProgress.js";
 
+const vehicleImgCache = new Set();
 
+function preloadVehicleImg(src) {
+  if (!src || vehicleImgCache.has(src)) return;
+  const img = new Image();
+  img.src = src;
+  vehicleImgCache.add(src);
+}
 
 function sumVolumeForWeek(sets, weekId) {
   return sets.reduce((sum, s) => {
@@ -52,16 +59,17 @@ function vehicleChipHtml(vehicleId, kind = "current") {
   const src = getVehicleImgSrc(vehicleId);
   const fallback = getVehicleImgSrc("sedan");
 
+  preloadVehicleImg(src);
+  preloadVehicleImg(fallback);
+
   return `
     <div class="ipVeh ${isNext ? "isNext" : "isCurrent"}">
       <img
         class="ipVehImg"
         src="${src}"
         alt="${vehicleId}"
-        loading="lazy"
-        decoding="async"
         data-fallback="${fallback}"
-        onerror="const fb=this.dataset.fallback; if(fb && this.src!==fb) this.src=fb;"
+        onerror="const fb=this.dataset.fallback; if(fb && this.getAttribute('src') !== fb) this.setAttribute('src', fb);"
       />
       <div class="ipVehLabel">${titleCase(vehicleId)}</div>
     </div>
