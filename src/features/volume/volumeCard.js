@@ -58,6 +58,8 @@ function vehicleChipHtml(vehicleId, kind = "current") {
         class="ipVehImg"
         src="${src}"
         alt="${vehicleId}"
+        loading="lazy"
+        decoding="async"
         data-fallback="${fallback}"
         onerror="const fb=this.dataset.fallback; if(fb && this.src!==fb) this.src=fb;"
       />

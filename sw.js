@@ -1,4 +1,4 @@
-const CACHE = "iron-pulse-v2-1";
+const CACHE = "iron-pulse-v2-2";
 
 const ASSETS = [
   "./",
