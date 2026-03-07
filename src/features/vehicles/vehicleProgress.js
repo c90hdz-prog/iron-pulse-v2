@@ -15,18 +15,17 @@ export function getVehicleProgress(volume = 0) {
     };
   }
 
-  // Before first milestone
+  // BEFORE FIRST VEHICLE
   if (v < milestones[0].lbs) {
     return {
-      currentId: milestones[0].id,
-      currentLabel: milestones[0].label,
-      nextId: milestones[1]?.id ?? null,
-      nextLabel: milestones[1]?.label ?? null,
+      currentId: "start",
+      currentLabel: "Start",
+      nextId: milestones[0].id,
+      nextLabel: milestones[0].label,
       isMaxed: false,
     };
   }
 
-  // Find highest reached milestone
   let current = milestones[0];
   for (const m of milestones) {
     if (v >= m.lbs) current = m;
@@ -35,7 +34,6 @@ export function getVehicleProgress(volume = 0) {
   const currentIndex = milestones.findIndex((m) => m.id === current.id);
   const next = milestones[currentIndex + 1] ?? null;
 
-  // Maxed
   if (!next) {
     return {
       currentId: current.id,
@@ -59,4 +57,15 @@ export function getVehicleImgSrc(vehicleId) {
   const isGitHubPages = location.hostname.includes("github.io");
   const base = isGitHubPages ? "/iron-pulse-v2" : "";
   return `${base}/assets/icons/vehicles/${vehicleId}.webp`;
+}
+
+export function getSafeVehicleImgSrc(vehicleId) {
+  if (vehicleId === "start") {
+    return { src: "", fallback: "" };
+  }
+
+  const src = getVehicleImgSrc(vehicleId);
+  const fallback = getVehicleImgSrc("dirtbike");
+
+  return { src, fallback };
 }

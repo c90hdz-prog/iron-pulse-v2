@@ -1129,3 +1129,10 @@ input {
     color: var(--btnGhostText);
 }
 
+.vehicleStart {
+    width: 100px;
+    height: 70px;
+    display: grid;
+    place-items: center;
+    font-size: 42px;
+}
