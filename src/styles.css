@@ -965,6 +965,7 @@ input {
 }
 
 .ipVehRow {
+    min-height: 110px;
     margin-top: 14px;
     display: flex;
     align-items: center;
@@ -979,23 +980,23 @@ input {
 .ipVeh {
     flex: 1;
     min-width: 120px;
+
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    gap: 8px;
+    justify-content: flex-end;
+    /* anchor vehicle to bottom */
+
+    gap: 6px;
 }
 
 .ipVehImg {
-    width: 120px;
-    height: auto;
+    width: 100px;
+    height: 70px;
+    /* fixed display area */
     object-fit: contain;
-    display: block;
-    filter: none;
-    transform: none;
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
 }
+
 
 .ipVehEmoji {
     font-size: 44px;
@@ -1022,6 +1023,7 @@ input {
     color: var(--muted);
     letter-spacing: 0.2px;
     text-align: center;
+    margin-top: 4px;
 }
 
 .ipVehArrow {

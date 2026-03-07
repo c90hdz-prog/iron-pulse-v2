@@ -1,67 +1,57 @@
 // src/features/vehicles/vehicleProgress.js
+import { VOLUME_MILESTONES } from "../volume/volumeEngine.js";
 
-export const VEHICLE_ORDER = [
-  "dirtbike",
-  "sedan",
-  "pickup",
-  "suv",
-  "bus",
-  "firetruck",
-  "cargotruck",
-  "helicopter",
-  "privatejet",
-  "interstellar",
-];
+export function getVehicleProgress(volume = 0) {
+  const milestones = [...VOLUME_MILESTONES].sort((a, b) => a.lbs - b.lbs);
+  const v = Number(volume) || 0;
 
-// Set your tonnage thresholds (weekly volume). Tweak anytime.
-export const VEHICLE_THRESHOLDS = [
-  { id: "dirtbike", min: 0 },
-  { id: "sedan", min: 25000 },
-  { id: "pickup", min: 50000 },
-  { id: "suv", min: 75000 },
-  { id: "bus", min: 100000 },
-  { id: "firetruck", min: 150000 },
-  { id: "cargotruck", min: 200000 },
-  { id: "helicopter", min: 300000 },
-  { id: "privatejet", min: 400000 },
-  { id: "interstellar", min: 500000 },
-];
-
-export function getVehicleForTonnage(tonnage, thresholds = VEHICLE_THRESHOLDS) {
-  const t = Number(tonnage) || 0;
-  let current = thresholds[0]?.id || "dirtbike";
-
-  for (const step of thresholds) {
-    if (t >= step.min) current = step.id;
-  }
-  return current;
-}
-
-export function getVehicleProgress(tonnage, thresholds = VEHICLE_THRESHOLDS) {
-  const t = Number(tonnage) || 0;
-
-  // Find current step index
-  let idx = 0;
-  for (let i = 0; i < thresholds.length; i++) {
-    if (t >= thresholds[i].min) idx = i;
+  if (!milestones.length) {
+    return {
+      currentId: "start",
+      currentLabel: "Start",
+      nextId: null,
+      nextLabel: null,
+      isMaxed: false,
+    };
   }
 
-  const cur = thresholds[idx];
-  const next = thresholds[idx + 1] || null;
+  // Before first milestone
+  if (v < milestones[0].lbs) {
+    return {
+      currentId: milestones[0].id,
+      currentLabel: milestones[0].label,
+      nextId: milestones[1]?.id ?? null,
+      nextLabel: milestones[1]?.label ?? null,
+      isMaxed: false,
+    };
+  }
 
-  const curMin = cur.min;
-  const nextMin = next ? next.min : cur.min;
+  // Find highest reached milestone
+  let current = milestones[0];
+  for (const m of milestones) {
+    if (v >= m.lbs) current = m;
+  }
 
-  const pct = next
-    ? Math.max(0, Math.min(1, (t - curMin) / (nextMin - curMin)))
-    : 1;
+  const currentIndex = milestones.findIndex((m) => m.id === current.id);
+  const next = milestones[currentIndex + 1] ?? null;
+
+  // Maxed
+  if (!next) {
+    return {
+      currentId: current.id,
+      currentLabel: current.label,
+      nextId: null,
+      nextLabel: null,
+      isMaxed: true,
+    };
+  }
 
   return {
-    currentId: cur.id,
-    nextId: next?.id ?? null,
-    currentMin: curMin,
-    nextMin: next?.min ?? null,
-    pctToNext: pct,
+    currentId: current.id,
+    currentLabel: current.label,
+    nextId: next.id,
+    nextLabel: next.label,
+    isMaxed: false,
   };
 }
 
@@ -69,10 +59,4 @@ export function getVehicleImgSrc(vehicleId) {
   const isGitHubPages = location.hostname.includes("github.io");
   const base = isGitHubPages ? "/iron-pulse-v2" : "";
   return `${base}/assets/icons/vehicles/${vehicleId}.webp`;
-}
-// optional: safe fallback if a file isn't in the folder yet
-export function getSafeVehicleImgSrc(vehicleId) {
-  const src = getVehicleImgSrc(vehicleId);
-  // Use sedan as a safe default (since you have it)
-  return { src, fallback: getVehicleImgSrc("sedan") };
 }

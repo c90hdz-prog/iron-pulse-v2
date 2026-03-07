@@ -124,15 +124,21 @@ export function renderWeeklyVolume(el, state, view = null) {
 
     const v = getVehicleProgress(currentVol);
     currentVehicleId = v.currentId || "";
-    nextVehicleId = v.nextId || "interstellar";
+    nextVehicleId = v.isMaxed ? null : (v.nextId || "");
 
-    vehicleRow = `
-      <div class="ipVehRow">
-        ${vehicleChipHtml(currentVehicleId, "current")}
-        <div class="ipVehArrow">→</div>
-        ${vehicleChipHtml(nextVehicleId, "next")}
-      </div>
-    `;
+    vehicleRow = v.isMaxed
+      ? `
+        <div class="ipVehRow">
+          ${vehicleChipHtml(currentVehicleId, "current")}
+        </div>
+      `
+      : `
+        <div class="ipVehRow">
+          ${vehicleChipHtml(currentVehicleId, "current")}
+          <div class="ipVehArrow">→</div>
+          ${vehicleChipHtml(nextVehicleId, "next")}
+        </div>
+      `;
 
 
   } else {
