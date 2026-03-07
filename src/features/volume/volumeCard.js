@@ -4,15 +4,6 @@ import { monthKey } from "../../state/month.js";
 import { selectCurrentWeekGauge } from "../../state/selectors.js";
 import { getVehicleProgress, getVehicleImgSrc } from "../vehicles/vehicleProgress.js";
 
-const vehicleImgCache = new Set();
-
-function preloadVehicleImg(src) {
-  if (!src || vehicleImgCache.has(src)) return;
-  const img = new Image();
-  img.src = src;
-  vehicleImgCache.add(src);
-}
-
 function sumVolumeForWeek(sets, weekId) {
   return sets.reduce((sum, s) => {
     const sWeek =
@@ -42,8 +33,6 @@ function fmt(n) {
   return Math.round(Number(n) || 0).toLocaleString();
 }
 
-
-
 function titleCase(str = "") {
   return String(str)
     .replace(/([A-Z])/g, " $1")
@@ -52,15 +41,20 @@ function titleCase(str = "") {
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-
-
 function vehicleChipHtml(vehicleId, kind = "current") {
   const isNext = kind === "next";
-  const src = getVehicleImgSrc(vehicleId);
-  const fallback = getVehicleImgSrc("sedan");
 
-  preloadVehicleImg(src);
-  preloadVehicleImg(fallback);
+  if (!vehicleId || vehicleId === "start") {
+    return `
+      <div class="ipVeh ${isNext ? "isNext" : "isCurrent"}">
+        <div class="ipVehEmoji">🏁</div>
+        <div class="ipVehLabel">Start</div>
+      </div>
+    `;
+  }
+
+  const src = getVehicleImgSrc(vehicleId);
+  const fallback = getVehicleImgSrc("dirtbike");
 
   return `
     <div class="ipVeh ${isNext ? "isNext" : "isCurrent"}">
@@ -75,8 +69,6 @@ function vehicleChipHtml(vehicleId, kind = "current") {
     </div>
   `;
 }
-
-
 
 export function renderWeeklyVolume(el, state, view = null) {
   if (!el) return;
@@ -103,9 +95,6 @@ export function renderWeeklyVolume(el, state, view = null) {
   let currentVehicleId = "";
   let nextVehicleId = "";
 
-
-
-  
   if (activeView === "week") {
     const gauge = selectCurrentWeekGauge(state);
     currentVol = gauge.volume || 0;
@@ -117,14 +106,14 @@ export function renderWeeklyVolume(el, state, view = null) {
       : `MAXED: ${gauge.prev?.label || "MAX"}`;
 
     metaRight = gauge.isMaxed
-      ? `+${fmt(gauge.overflow)} lbs`
+      ? `+${fmt(gauge.overflow || 0)} lbs`
       : `${gauge.next?.label || ""}`;
 
     extraMeta = `Week ${currentWeek}`;
 
     const v = getVehicleProgress(currentVol);
-    currentVehicleId = v.currentId || "";
-    nextVehicleId = v.isMaxed ? null : (v.nextId || "");
+    currentVehicleId = v.currentId || "start";
+    nextVehicleId = v.nextId || "";
 
     vehicleRow = v.isMaxed
       ? `
@@ -136,17 +125,12 @@ export function renderWeeklyVolume(el, state, view = null) {
         <div class="ipVehRow">
           ${vehicleChipHtml(currentVehicleId, "current")}
           <div class="ipVehArrow">→</div>
-          ${vehicleChipHtml(nextVehicleId, "next")}
+          ${vehicleChipHtml(nextVehicleId || "dirtbike", "next")}
         </div>
       `;
-
-
   } else {
-
     currentVol = sumVolumeForMonth(sets, currentMonth);
     baselineVol = sumVolumeForMonth(sets, lastMonth);
-
-
 
     const p = pct(currentVol, baselineVol);
     widthPct = Math.round(p * 50);
@@ -157,7 +141,6 @@ export function renderWeeklyVolume(el, state, view = null) {
     extraMeta = `Month ${currentMonth}`;
   }
 
-  // ✅ Signature: if same, don't rebuild DOM (prevents img flicker)
   const sig = [
     activeView,
     currentVol,
@@ -170,7 +153,6 @@ export function renderWeeklyVolume(el, state, view = null) {
   ].join("|");
 
   if (el.dataset.volSig === sig) {
-    // tiny updates only
     const fill = el.querySelector(".ipBarFill");
     if (fill) fill.style.width = `${widthPct}%`;
 
@@ -219,8 +201,6 @@ export function renderWeeklyVolume(el, state, view = null) {
     </div>
   `;
 
-
-
   el.querySelector("#volWeek")?.addEventListener("click", () => {
     el.dataset.volView = "week";
     renderWeeklyVolume(el, state, "week");
@@ -231,4 +211,3 @@ export function renderWeeklyVolume(el, state, view = null) {
     renderWeeklyVolume(el, state, "month");
   });
 }
-
