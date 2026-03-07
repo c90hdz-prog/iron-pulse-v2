@@ -70,11 +70,12 @@ const els = {
   afterburn: document.getElementById("afterburn"),
   modalRoot: document.getElementById("modalRoot"),
   btnCTA: document.getElementById("btnCTA"),
-  btnSettings: document.getElementById("btnSettings"),
+  btnInstall: document.getElementById("btnInstall"),
   todaySummary: document.getElementById("todaySummary"),
   heatmap: document.getElementById("heatmap"),
 };
 
+let deferredInstallPrompt = null;
 // -------------------------
 // Today Split Events
 // -------------------------
@@ -502,11 +503,44 @@ store.subscribe(render);
 render();
 
 
-// Settings placeholder
-els.btnSettings?.addEventListener("click", () => {
-  toast("Settings modal tomorrow ✅");
+// -------------------------
+// PWA Install Prompt
+// -------------------------
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+
+  if (els.btnInstall) {
+    els.btnInstall.style.display = "inline-flex";
+  }
 });
 
+window.addEventListener("appinstalled", () => {
+  deferredInstallPrompt = null;
+
+  if (els.btnInstall) {
+    els.btnInstall.style.display = "none";
+  }
+
+  toast("Iron Pulse installed ✅");
+});
+
+els.btnInstall?.addEventListener("click", async () => {
+  if (!deferredInstallPrompt) return;
+
+  deferredInstallPrompt.prompt();
+  const choice = await deferredInstallPrompt.userChoice;
+
+  if (choice?.outcome === "accepted") {
+    toast("Installing Iron Pulse…");
+  }
+
+  deferredInstallPrompt = null;
+
+  if (els.btnInstall) {
+    els.btnInstall.style.display = "none";
+  }
+});
 // -------------------------
 // Picker modal binder
 // -------------------------

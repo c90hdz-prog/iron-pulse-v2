@@ -1,14 +1,56 @@
 :root {
-    --bg: #0b0b0f;
+    --bg: #0b0b10;
     --panel: rgba(255, 255, 255, 0.06);
-    --panel2: rgba(255, 255, 255, 0.09);
-    --text: rgba(255, 255, 255, 0.92);
-    --muted: rgba(255, 255, 255, 0.65);
+    --panel2: rgba(255, 255, 255, 0.10);
+    --text: rgba(255, 255, 255, 0.94);
+    --muted: rgba(255, 255, 255, 0.68);
     --line: rgba(255, 255, 255, 0.10);
     --shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
     --radius: 18px;
-    --cta: #ff5c77;
-    --cta2: #ff9d4b;
+
+    /* brand accents */
+    --accentBlue: #35b6ff;
+    --accentPurple: #7a5cff;
+    --accentPink: #ff5fa8;
+    --accentOrange: #ffb26b;
+
+    /* app background */
+    --bgGrad1: rgba(255, 95, 168, 0.10);
+    --bgGrad2: rgba(122, 92, 255, 0.11);
+    --bgGrad3: rgba(53, 182, 255, 0.08);
+    --bgBaseTop: #0b0b10;
+    --bgBaseBottom: #0a0a12;
+
+    /* header */
+    --headerTop: rgba(16, 10, 18, 0.92);
+    --headerBottom: rgba(11, 11, 15, 0.88);
+
+    /* cards */
+    --cardTop: rgba(255, 255, 255, 0.075);
+    --cardBottom: rgba(255, 255, 255, 0.045);
+    --cardBlur: 10px;
+
+    /* primary action gradient */
+    --btnPrimaryStart: #00c6ff;
+    --btnPrimaryMid: #3a7bff;
+    --btnPrimaryEnd: #6a5cff;
+    --btnPrimaryText: #ffffff;
+    --btnPrimaryShadow: rgba(58, 123, 255, 0.35);
+    --btnPrimaryShadowSoft: rgba(58, 123, 255, 0.25);
+
+    /* ghost / secondary buttons */
+    --btnGhostBg: rgba(30, 35, 60, 0.35);
+    --btnGhostBorder: rgba(120, 140, 255, 0.35);
+    --btnGhostText: var(--text);
+    --btnGhostBlur: 8px;
+
+    /* pill states */
+    --pillBg: rgba(0, 0, 0, 0.18);
+    --pillText: var(--muted);
+    --pillActiveBg: rgba(255, 255, 255, 0.22);
+    --pillActiveBorder: rgba(255, 255, 255, 0.22);
+    --pillActiveText: #ffffff;
+
     --safeBottom: env(safe-area-inset-bottom, 0px);
 }
 
@@ -28,9 +70,10 @@ body {
     margin: 0;
     font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
     background:
-        radial-gradient(1200px 800px at 10% 0%, rgba(255, 92, 119, 0.12), transparent 60%),
-        radial-gradient(900px 600px at 90% 20%, rgba(255, 157, 75, 0.10), transparent 55%),
-        var(--bg);
+        radial-gradient(1100px 700px at 12% 0%, var(--bgGrad1), transparent 58%),
+        radial-gradient(900px 620px at 88% 8%, var(--bgGrad2), transparent 54%),
+        radial-gradient(850px 560px at 65% 100%, var(--bgGrad3), transparent 56%),
+        linear-gradient(180deg, var(--bgBaseTop) 0%, var(--bgBaseBottom) 100%);
     color: var(--text);
     touch-action: pan-x pan-y;
     -webkit-text-size-adjust: 100%;
@@ -61,7 +104,7 @@ body.noScroll {
     padding: 14px;
     border-bottom: 1px solid var(--line);
     backdrop-filter: blur(14px);
-    background: rgba(11, 11, 15, 0.72);
+    background: linear-gradient(180deg, var(--headerTop), var(--headerBottom));
 }
 
 .brand {
@@ -71,17 +114,19 @@ body.noScroll {
 }
 
 .logo {
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    overflow: hidden;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: 800;
-    font-size: 16px;
-    letter-spacing: -0.5px;
-    color: rgb(0, 0, 0);
-    background: linear-gradient(135deg, #ff6b6b, #ff9a44);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+}
+.logoImg {
+    width: 140%;
+    height: 140%;
+    object-fit: cover;
 }
 
 .brandTitle {
@@ -133,10 +178,19 @@ body.noScroll {
     padding: 14px 16px;
     font-weight: 800;
     font-size: 16px;
-    color: #0b0b0f;
+    color: var(--btnPrimaryText);
     cursor: pointer;
-    background: linear-gradient(135deg, var(--cta), var(--cta2));
-    box-shadow: 0 16px 44px rgba(255, 92, 119, 0.22);
+    background: linear-gradient(135deg,
+            var(--btnPrimaryStart) 0%,
+            var(--btnPrimaryMid) 45%,
+            var(--btnPrimaryEnd) 100%);
+    box-shadow: 0 16px 44px var(--btnPrimaryShadow);
+}
+
+.cta:hover {
+    box-shadow:
+        0 16px 44px var(--btnPrimaryShadow),
+        0 0 16px var(--btnPrimaryShadowSoft);
 }
 
 /* =========================
@@ -145,10 +199,11 @@ body.noScroll {
 
 .card {
     border: 1px solid var(--line);
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.05));
+    background: linear-gradient(180deg, var(--cardTop), var(--cardBottom));
     border-radius: var(--radius);
     box-shadow: var(--shadow);
     padding: 14px;
+    backdrop-filter: blur(var(--cardBlur));
 }
 
 .card h3 {
@@ -197,20 +252,24 @@ button:disabled {
 
 .btn {
     flex: 1;
-    max-width: 100%;
     border-radius: 14px;
-    border: 1px solid var(--line);
-    background: rgba(255, 255, 255, 0.06);
-    color: var(--text);
+    border: 1px solid var(--btnGhostBorder);
+    background: var(--btnGhostBg);
+    color: var(--btnGhostText);
     padding: 12px;
     cursor: pointer;
     font-weight: 750;
+    backdrop-filter: blur(var(--btnGhostBlur));
 }
 
 .btnPrimary {
     border: none;
-    color: #0b0b0f;
-    background: linear-gradient(135deg, var(--cta), var(--cta2));
+    color: var(--btnPrimaryText);
+    background: linear-gradient(135deg,
+            var(--btnPrimaryStart) 0%,
+            var(--btnPrimaryMid) 45%,
+            var(--btnPrimaryEnd) 100%);
+    box-shadow: 0 8px 24px var(--btnPrimaryShadowSoft);
 }
 
 .btn.active,
@@ -231,8 +290,8 @@ button.btn.active:active {
     padding: 8px 10px;
     border: 1px solid var(--line);
     border-radius: 999px;
-    background: rgba(0, 0, 0, 0.18);
-    color: var(--muted);
+    background: var(--pillBg);
+    color: var(--pillText);
     font-size: 12px;
     white-space: normal;
     overflow-wrap: anywhere;
@@ -240,9 +299,9 @@ button.btn.active:active {
 
 .pill.active,
 .pillActive {
-    background: rgba(255, 255, 255, 0.22);
-    color: #fff;
-    border-color: rgba(255, 255, 255, 0.22);
+    background: var(--pillActiveBg);
+    color: var(--pillActiveText);
+    border-color: var(--pillActiveBorder);
 }
 
 .pillSelectable {
@@ -1058,5 +1117,15 @@ input {
         backface-visibility: hidden;
         -webkit-backface-visibility: hidden;
     }
+}
+
+#btnInstall {
+    font-size: 13px;
+    font-weight: 700;
+    padding: 10px 14px;
+    border-radius: 12px;
+    background: var(--btnGhostBg);
+    border: 1px solid var(--btnGhostBorder);
+    color: var(--btnGhostText);
 }
 
