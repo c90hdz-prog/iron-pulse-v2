@@ -949,18 +949,27 @@ input {
     position: relative;
     border: 1px solid rgba(255, 255, 255, 0.10);
     background: rgba(255, 255, 255, 0.04);
-    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+    box-shadow:
+        0 18px 40px rgba(0, 0, 0, 0.35),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
     overflow: hidden;
 }
 
 .ipGlass::before {
-    content: none;
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg,
+            rgba(255, 255, 255, 0.05),
+            rgba(255, 255, 255, 0.00) 35%);
+    pointer-events: none;
 }
 
 .ipTopRow {
     align-items: flex-start;
     justify-content: space-between;
     gap: 12px;
+    margin-bottom: 6px;
 }
 
 .ipBig {
@@ -1006,11 +1015,11 @@ input {
 }
 
 .ipMeta {
-    margin-top: 10px;
+    margin-top: 14px;
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     gap: 10px;
-    font-size: 12px;
+    font-size: 14px;
     color: var(--muted);
 }
 
@@ -1135,4 +1144,164 @@ input {
     display: grid;
     place-items: center;
     font-size: 42px;
+}
+
+.ipVehHero {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 26px 0 18px;
+}
+
+.ipVehHero .ipVehImg {
+    width: 300px;
+    max-width: 90%;
+    height: auto;
+    filter:
+        drop-shadow(0 10px 22px rgba(0, 0, 0, 0.45)) 
+        drop-shadow(0 0 18px rgba(53, 182, 255, 0.10));
+}
+
+.ipVehHero .ipVehLabel {
+    text-align: center;
+    margin-top: 6px;
+    font-size: 14px;
+    opacity: 0.8;
+}
+
+.ipBig {
+    font-size: 46px;
+    font-weight: 800;
+    text-align: center;
+    margin-top: 2px;
+    line-height: 1;
+}
+
+.ipUnit {
+    font-size: 16px;
+    font-weight: 650;
+    opacity: 0.72;
+}
+
+/* =========================
+   WEEKLY HERO CARD — APPLE STYLE
+   ========================= */
+
+.ipGlass {
+    position: relative;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: linear-gradient(180deg,
+            rgba(255, 255, 255, 0.09) 0%,
+            rgba(255, 255, 255, 0.045) 100%);
+    box-shadow:
+        0 18px 40px rgba(0, 0, 0, 0.35),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    overflow: hidden;
+}
+
+.ipGlass::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg,
+            rgba(255, 255, 255, 0.05),
+            rgba(255, 255, 255, 0.00) 35%);
+    pointer-events: none;
+}
+
+.ipTopRow {
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 4px;
+}
+
+.ipEyebrow {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: rgba(255, 255, 255, 0.72);
+    text-transform: uppercase;
+}
+
+.ipVehHero {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 26px 0 18px;
+}
+
+.ipVehHero .ipVehImg {
+    width: 300px;
+    max-width: 90%;
+    height: auto;
+    filter:
+        drop-shadow(0 10px 22px rgba(0, 0, 0, 0.45)) drop-shadow(0 0 18px rgba(53, 182, 255, 0.10));
+}
+
+.ipVehHero .ipVehLabel {
+    text-align: center;
+    margin-top: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.68);
+}
+
+.ipBig {
+    font-size: 46px;
+    font-weight: 800;
+    text-align: center;
+    line-height: 1;
+    letter-spacing: -0.04em;
+    margin-top: 2px;
+}
+
+.ipUnit {
+    font-size: 16px;
+    font-weight: 650;
+    opacity: 0.72;
+    margin-left: 4px;
+}
+
+.ipMeta {
+    margin-top: 12px;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    font-size: 15px;
+    color: var(--muted);
+}
+
+.ipMetaLeft {
+    opacity: 0.92;
+    text-align: center;
+}
+
+.ipBarWrap {
+    position: relative;
+    margin-top: 16px;
+    height: 12px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.10);
+    overflow: hidden;
+}
+
+.ipBarFill {
+    height: 100%;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.82);
+    transition: width 420ms cubic-bezier(0.2, 0.9, 0.2, 1);
+}
+
+.ipBarShine {
+    display: none;
+}
+
+.ipFoot {
+    margin-top: 14px;
+    font-size: 13px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.52);
+    letter-spacing: 0.02em;
+    text-align: left;
 }

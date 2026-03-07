@@ -102,32 +102,25 @@ export function renderWeeklyVolume(el, state, view = null) {
     widthPct = Math.round((gauge.fill || 0) * 100);
 
     metaLeft = gauge.next
-      ? `${fmt(gauge.remainingToNext)} lbs to ${gauge.next.label}`
-      : `MAXED: ${gauge.prev?.label || "MAX"}`;
+      ? `${fmt(gauge.remainingToNext)} remaining to ${gauge.next.label}`
+      : `Maxed • ${gauge.prev?.label || "Max"}`;
 
     metaRight = gauge.isMaxed
       ? `+${fmt(gauge.overflow || 0)} lbs`
       : `${gauge.next?.label || ""}`;
 
-    extraMeta = `Week ${currentWeek}`;
+    extraMeta = String(currentWeek).replace(/^(\d{4})-W(\d{2})$/, "Week $2 • $1");
 
     const v = getVehicleProgress(currentVol);
     currentVehicleId = v.currentId || "start";
     nextVehicleId = v.nextId || "";
 
-    vehicleRow = v.isMaxed
-      ? `
-        <div class="ipVehRow">
-          ${vehicleChipHtml(currentVehicleId, "current")}
-        </div>
-      `
-      : `
-        <div class="ipVehRow">
-          ${vehicleChipHtml(currentVehicleId, "current")}
-          <div class="ipVehArrow">→</div>
-          ${vehicleChipHtml(nextVehicleId || "dirtbike", "next")}
-        </div>
-      `;
+vehicleRow = `
+  <div class="ipVehHero">
+    ${vehicleChipHtml(currentVehicleId, "current")}
+  </div>
+`;
+
   } else {
     currentVol = sumVolumeForMonth(sets, currentMonth);
     baselineVol = sumVolumeForMonth(sets, lastMonth);
@@ -175,8 +168,7 @@ export function renderWeeklyVolume(el, state, view = null) {
     <div class="card ipGlass">
       <div class="row ipTopRow">
         <div>
-          <div class="cardTitle">Weekly Volume</div>
-          <div class="ipBig">${fmt(currentVol)} <span class="ipUnit">lbs</span></div>
+          <div class="ipEyebrow">WEEKLY VOLUME</div>
         </div>
 
         <div class="ipSeg">
@@ -185,17 +177,18 @@ export function renderWeeklyVolume(el, state, view = null) {
         </div>
       </div>
 
-      <div class="ipBarWrap" aria-label="Volume progress bar">
-        <div class="ipBarFill" style="width:${widthPct}%;"></div>
-        <div class="ipBarShine"></div>
-      </div>
+        ${activeView === "week" ? vehicleRow : ""}
 
-      <div class="ipMeta">
-        <div class="ipMetaLeft">${metaLeft}</div>
-        <div class="ipMetaRight">${metaRight}</div>
-      </div>
+        <div class="ipBig">${fmt(currentVol)} <span class="ipUnit">lbs</span></div>
 
-      ${activeView === "week" ? vehicleRow : ""}
+        <div class="ipMeta">
+          <div class="ipMetaLeft">${metaLeft}</div>
+        </div>
+
+        <div class="ipBarWrap" aria-label="Volume progress bar">
+          <div class="ipBarFill" style="width:${widthPct}%;"></div>
+          <div class="ipBarShine"></div>
+        </div>
 
       <div class="ipFoot">${extraMeta}</div>
     </div>
