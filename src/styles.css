@@ -1,5 +1,3 @@
-
-
 :root {
     --bg: #0b0b0f;
     --panel: rgba(255, 255, 255, 0.06);
@@ -14,19 +12,23 @@
     --safeBottom: env(safe-area-inset-bottom, 0px);
 }
 
-* {
+*,
+*::before,
+*::after {
     box-sizing: border-box;
 }
 
 html,
 body {
     height: 100%;
+    overflow-x: hidden;
 }
 
 body {
     margin: 0;
     font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-    background: radial-gradient(1200px 800px at 10% 0%, rgba(255, 92, 119, 0.12), transparent 60%),
+    background:
+        radial-gradient(1200px 800px at 10% 0%, rgba(255, 92, 119, 0.12), transparent 60%),
         radial-gradient(900px 600px at 90% 20%, rgba(255, 157, 75, 0.10), transparent 55%),
         var(--bg);
     color: var(--text);
@@ -40,6 +42,15 @@ body {
     flex-direction: column;
 }
 
+body.noScroll {
+    overflow: hidden;
+    touch-action: none;
+}
+
+/* =========================
+   HEADER / APP SHELL
+   ========================= */
+
 .header {
     position: sticky;
     top: 0;
@@ -47,7 +58,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 14px 14px;
+    padding: 14px;
     border-bottom: 1px solid var(--line);
     backdrop-filter: blur(14px);
     background: rgba(11, 11, 15, 0.72);
@@ -63,17 +74,13 @@ body {
     width: 40px;
     height: 40px;
     border-radius: 12px;
-
     display: flex;
     align-items: center;
     justify-content: center;
-
     font-weight: 800;
     font-size: 16px;
     letter-spacing: -0.5px;
-
     color: rgb(0, 0, 0);
-
     background: linear-gradient(135deg, #ff6b6b, #ff9a44);
 }
 
@@ -86,15 +93,6 @@ body {
     color: var(--muted);
     font-size: 12px;
     margin-top: 2px;
-}
-
-.iconBtn {
-    border: 1px solid var(--line);
-    background: rgba(255, 255, 255, 0.06);
-    color: var(--text);
-    padding: 10px 12px;
-    border-radius: 12px;
-    cursor: pointer;
 }
 
 .main {
@@ -117,29 +115,6 @@ body {
         grid-template-columns: 1fr 1fr;
     }
 }
-
-.card {
-    border: 1px solid var(--line);
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.05));
-    border-radius: var(--radius);
-    box-shadow: var(--shadow);
-    padding: 14px;
-}
-
-.card h3 {
-    margin: 0 0 6px 0;
-    font-size: 14px;
-    color: var(--muted);
-    font-weight: 650;
-    letter-spacing: 0.2px;
-}
-
-.card .big {
-    font-size: 18px;
-    font-weight: 750;
-}
-
-
 
 .footer {
     position: sticky;
@@ -164,112 +139,393 @@ body {
     box-shadow: 0 16px 44px rgba(255, 92, 119, 0.22);
 }
 
-body.noScroll {
+/* =========================
+   CARDS / GENERIC UI
+   ========================= */
+
+.card {
+    border: 1px solid var(--line);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.05));
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 14px;
+}
+
+.card h3 {
+    margin: 0 0 6px 0;
+    font-size: 14px;
+    color: var(--muted);
+    font-weight: 650;
+    letter-spacing: 0.2px;
+}
+
+.card .big {
+    font-size: 18px;
+    font-weight: 750;
+}
+
+.row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.focusPanel {
+    border: 1px solid var(--line);
+    background: rgba(0, 0, 0, 0.18);
+    border-radius: var(--radius);
+    padding: 12px;
+}
+
+/* =========================
+   BUTTONS / PILLS
+   ========================= */
+
+button,
+.btn,
+.pill,
+.todayRow,
+.iconBtn {
+    touch-action: manipulation;
+}
+
+button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btn {
+    flex: 1;
+    max-width: 100%;
+    border-radius: 14px;
+    border: 1px solid var(--line);
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text);
+    padding: 12px;
+    cursor: pointer;
+    font-weight: 750;
+}
+
+.btnPrimary {
+    border: none;
+    color: #0b0b0f;
+    background: linear-gradient(135deg, var(--cta), var(--cta2));
+}
+
+.btn.active,
+button.btn.active {
+    outline: 2px solid rgba(255, 255, 255, 0.55);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35) inset;
+}
+
+.btn.active:active,
+button.btn.active:active {
+    transform: translateY(1px);
+}
+
+.pill {
+    max-width: 100%;
+    min-width: 0;
+    padding: 8px 10px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.18);
+    color: var(--muted);
+    font-size: 12px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.pill.active,
+.pillActive {
+    background: rgba(255, 255, 255, 0.22);
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.22);
+}
+
+.pillSelectable {
+    cursor: pointer;
+}
+
+.iconBtn {
+    border: 1px solid var(--line);
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text);
+    padding: 10px 12px;
+    border-radius: 12px;
+    cursor: pointer;
+}
+
+.iconBtn.mini,
+.iconBtn.miniDanger {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    opacity: 0.9;
+}
+
+.iconBtn.miniDanger:disabled,
+.iconBtn.mini:disabled {
+    opacity: 0.35;
+}
+
+/* =========================
+   FORMS
+   ========================= */
+
+label,
+.modal label {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+input {
+    border-radius: 14px;
+    border: 1px solid var(--line);
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text);
+    padding: 12px 12px;
+    outline: none;
+}
+
+.field {
+    display: grid;
+    gap: 6px;
+    min-width: 0;
+}
+
+.fieldRow {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.fieldRow>.field {
+    min-width: 0;
+}
+
+@media (max-width: 360px) {
+    .fieldRow {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* =========================
+   MODALS
+   ========================= */
+
+.modalOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(6px);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal {
+    width: calc(100% - 24px);
+    max-width: 420px;
+    margin-bottom: env(safe-area-inset-bottom);
+    border-radius: 16px;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
     overflow: hidden;
-    touch-action: none;
-    /* helps on mobile */
+    background: rgba(18, 18, 22, 0.96);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 18px 60px rgba(0, 0, 0, 0.55);
 }
 
-/* Focus timer */
-.timerCard{
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  background: rgba(0,0,0,0.18);
-  padding: 14px;
-  margin-bottom: 12px;
+.modalHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px;
+    border-bottom: 1px solid var(--line);
 }
 
-.timerTop{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-  margin-bottom: 8px;
+.modalTitle {
+    font-weight: 800;
 }
 
-.timerTitle{
-  font-weight: 900;
-  letter-spacing: 0.2px;
+.modalBody {
+    flex: 1;
+    padding: 16px;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
-.timerDisplay{
-  text-align:center;
-  font-weight: 900;
-  font-size: 52px;
-  line-height: 1;
-  letter-spacing: 1px;
-  padding: 10px 0 12px;
+.modalActions {
+    display: flex;
+    gap: 10px;
+    padding: 14px;
+    border-top: 1px solid var(--line);
 }
 
-.timerActions{
-  display:flex;
-  gap:10px;
-  justify-content:center;
+.modal .row,
+.modal .grid,
+.modal .card {
+    min-width: 0;
 }
 
-.timerStop{
-  opacity: 0.8;
+.modal .card {
+    max-width: 100%;
+    overflow: hidden;
 }
 
-/* While timer is running: make it “center stage” */
-.modal.timerMode .timerCard{
-  position: sticky;
-  top: 0;
-  z-index: 5;
-  box-shadow: 0 18px 50px rgba(0,0,0,0.45);
-  border-color: rgba(255,255,255,0.14);
+.modal input {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
 }
 
-.modal.timerMode .fxContent{
-  opacity: 0.28;
-  pointer-events: none;
-  filter: blur(0.4px);
+.modal button {
+    max-width: 100%;
 }
 
-/* Timer finished pulse/glow */
+.modal.timerMode .timerCard {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
+    border-color: rgba(255, 255, 255, 0.14);
+}
+
+.modal.timerMode .fxContent {
+    opacity: 0.28;
+    pointer-events: none;
+    filter: blur(0.4px);
+}
+
+/* =========================
+   TOAST
+   ========================= */
+
+#toastRoot {
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: calc(86px + var(--safeBottom));
+    z-index: 60;
+}
+
+.toast {
+    border: 1px solid var(--line);
+    background: rgba(15, 15, 22, 0.92);
+    color: var(--text);
+    border-radius: 999px;
+    padding: 10px 12px;
+    margin-top: 10px;
+    box-shadow: var(--shadow);
+    font-weight: 650;
+}
+
+/* =========================
+   MICRO ANIMATIONS
+   ========================= */
+
+.pulseWin {
+    animation: pulseWin 650ms ease-out;
+}
+
+@keyframes pulseWin {
+    0% {
+        transform: scale(1);
+        filter: brightness(1);
+    }
+
+    35% {
+        transform: scale(1.03);
+        filter: brightness(1.12);
+    }
+
+    100% {
+        transform: scale(1);
+        filter: brightness(1);
+    }
+}
+
+/* =========================
+   TIMER
+   ========================= */
+
+.timerCard {
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: rgba(0, 0, 0, 0.18);
+    padding: 14px;
+    margin-bottom: 12px;
+}
+
+.timerTop {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.timerTitle {
+    font-weight: 800;
+    letter-spacing: 0.2px;
+}
+
+.timerDisplay {
+    text-align: center;
+    font-weight: 900;
+    font-size: 52px;
+    line-height: 1;
+    letter-spacing: 1px;
+    padding: 10px 0 12px;
+}
+
+.timerActions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.timerActions .btn {
+    flex: 1;
+}
+
+.timerStop {
+    opacity: 0.8;
+}
+
+.timerHint {
+    margin-top: 10px;
+    color: var(--muted);
+    font-size: 12px;
+    text-align: center;
+}
+
 @keyframes timerPulse {
-  0%   { transform: scale(1);   box-shadow: 0 0 0 rgba(255,255,255,0.0); }
-  40%  { transform: scale(1.02); box-shadow: 0 0 40px rgba(255,255,255,0.18); }
-  100% { transform: scale(1);   box-shadow: 0 0 0 rgba(255,255,255,0.0); }
+    0% {
+        transform: scale(1);
+        filter: drop-shadow(0 0 0 rgba(255, 120, 120, 0));
+    }
+
+    50% {
+        transform: scale(1.03);
+        filter: drop-shadow(0 0 18px rgba(255, 140, 90, 0.45));
+    }
+
+    100% {
+        transform: scale(1);
+        filter: drop-shadow(0 0 0 rgba(255, 120, 120, 0));
+    }
 }
 
-.timerDone{
-  animation: timerPulse 900ms ease-out 2;
+.timerDone {
+    animation: timerPulse 900ms ease-out 2;
 }
 
-/* Logged set row formatting */
-.fxSetRow{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-}
-
-.fxSetLeft{
-  display:flex;
-  flex-direction:column;
-  min-width: 0;
-}
-
-.fxSetSub{
-  color: var(--muted);
-  font-size: 12px;
-}
-
-.fxDelete{
-  border: 0;
-  background: transparent;
-  color: var(--muted);
-  font-size: 18px;
-  line-height: 1;
-  padding: 6px 8px;
-  border-radius: 10px;
-}
-
-.fxDelete:active{
-  transform: scale(0.96);
-}
-/* Fullscreen timer overlay */
 .timerOverlay {
     position: fixed;
     inset: 0;
@@ -295,18 +551,6 @@ body.noScroll {
     box-shadow: 0 18px 60px rgba(0, 0, 0, 0.55);
 }
 
-.timerTop {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding-bottom: 10px;
-    border-bottom: 1px solid var(--line);
-}
-
-.timerTitle {
-    font-weight: 800;
-}
-
 .timerBig {
     font-size: 64px;
     font-weight: 900;
@@ -315,44 +559,10 @@ body.noScroll {
     padding: 18px 0 10px;
 }
 
-.timerActions {
-    display: flex;
-    gap: 10px;
-    margin-top: 10px;
-}
-
-.timerActions .btn {
-    flex: 1;
-}
-
-.timerHint {
-    margin-top: 10px;
-    color: var(--muted);
-    font-size: 12px;
-    text-align: center;
-}
-
-/* Finish pulse */
 .timerDone .timerBig {
     animation: timerPulse 0.9s ease-in-out infinite;
 }
 
-@keyframes timerPulse {
-    0% {
-        transform: scale(1);
-        filter: drop-shadow(0 0 0 rgba(255, 120, 120, 0));
-    }
-
-    50% {
-        transform: scale(1.03);
-        filter: drop-shadow(0 0 18px rgba(255, 140, 90, 0.45));
-    }
-
-    100% {
-        transform: scale(1);
-        filter: drop-shadow(0 0 0 rgba(255, 120, 120, 0));
-    }
-}
 .timerOverlay.timerDone .timerSheet {
     animation: timerWinPulse 0.6s ease-in-out 2;
 }
@@ -370,161 +580,11 @@ body.noScroll {
         transform: translateY(0) scale(1);
     }
 }
-/* Modal */
 
 /* =========================
-   MODAL (single source of truth)
+   EXERCISE FOCUS / LOGGED SETS
    ========================= */
 
-/* Overlay */
-.modalOverlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.65);
-    backdrop-filter: blur(6px);
-    display: flex;
-    align-items: flex-end;
-    /* mobile sheet feel */
-    justify-content: center;
-    z-index: 1000;
-}
-
-/* Sheet */
-.modal {
-    width: calc(100% - 24px);
-    max-width: 420px;
-    margin-bottom: env(safe-area-inset-bottom);
-    border-radius: 16px;
-    max-height: 85vh;
-
-    display: flex;
-    flex-direction: column;
-
-    overflow: hidden;
-    /* stops inner bleed */
-
-    background: rgba(18, 18, 22, 0.96);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 18px 60px rgba(0, 0, 0, 0.55);
-}
-
-/* Header */
-.modalHeader {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 14px;
-    border-bottom: 1px solid var(--line);
-}
-
-.modalTitle {
-    font-weight: 800;
-}
-
-/* Body scroll area */
-.modalBody {
-    flex: 1;
-    padding: 16px;
-    overflow-y: auto;
-    overflow-x: hidden;
-    /* kill sideways scroll */
-}
-
-/* Common layout helpers inside modal */
-.modal .row,
-.modal .grid {
-    min-width: 0;
-    /* critical for flex/grid children */
-}
-
-.row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-}
-
-/* Pills */
-.pill {
-    padding: 8px 10px;
-    border: 1px solid var(--line);
-    border-radius: 999px;
-    background: rgba(0, 0, 0, 0.18);
-    color: var(--muted);
-    font-size: 12px;
-    min-width: 0;
-}
-
-/* Cards inside modal */
-.modal .card {
-    max-width: 100%;
-    overflow: hidden;
-}
-
-/* Fields */
-.field {
-    display: grid;
-    gap: 6px;
-    min-width: 0;
-}
-
-.modal label {
-    color: var(--muted);
-    font-size: 12px;
-}
-
-/* Inputs: make them obey container width (prevents “tiny pill input” issue) */
-.modal input {
-    width: 100%;
-    min-width: 0;
-    max-width: 100%;
-    border-radius: 14px;
-    border: 1px solid var(--line);
-    background: rgba(255, 255, 255, 0.06);
-    color: var(--text);
-    padding: 12px 12px;
-    outline: none;
-}
-button,
-.btn,
-.pill,
-.todayRow,
-.iconBtn {
-    touch-action: manipulation;
-    /* kills double-tap zoom on tap targets */
-}
-/* Buttons in modal */
-.modal button {
-    max-width: 100%;
-}
-
-/* Two-column field row (use this instead of flex row for inputs) */
-.fieldRow {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-}
-
-/* Prevent grid children from overflowing */
-.fieldRow>.field {
-    min-width: 0;
-}
-
-@media (max-width: 360px) {
-    .fieldRow {
-        grid-template-columns: 1fr;
-    }
-}
-
-/* Footer actions (if you use it) */
-.modalActions {
-    display: flex;
-    gap: 10px;
-    padding: 14px;
-    border-top: 1px solid var(--line);
-}
-
-/* Logged sets list (Exercise Focus modal) */
 .fxList {
     display: grid;
     gap: 10px;
@@ -535,17 +595,17 @@ button,
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-
     width: 100%;
     min-width: 0;
     padding: 12px;
-
     border: 1px solid var(--line);
     border-radius: 14px;
     background: rgba(0, 0, 0, 0.18);
 }
 
 .fxSetLeft {
+    display: flex;
+    flex-direction: column;
     min-width: 0;
 }
 
@@ -554,13 +614,14 @@ button,
     line-height: 1.1;
 }
 
-.fxSub {
+.fxSub,
+.fxSetSub {
     margin-top: 4px;
     color: var(--muted);
     font-size: 12px;
 }
 
-/* Small "x" delete button */
+.fxDelete,
 .fxDel {
     flex: 0 0 auto;
     width: 36px;
@@ -575,160 +636,14 @@ button,
     place-items: center;
 }
 
-label {
-    color: var(--muted);
-    font-size: 12px;
+.fxDelete:active {
+    transform: scale(0.96);
 }
 
-input {
-    border-radius: 14px;
-    border: 1px solid var(--line);
-    background: rgba(255, 255, 255, 0.06);
-    color: var(--text);
-    padding: 12px 12px;
-    outline: none;
-}
+/* =========================
+   TODAY SPLIT
+   ========================= */
 
-
-
-.btn {
-    flex: 1;
-    border-radius: 14px;
-    border: 1px solid var(--line);
-    background: rgba(255, 255, 255, 0.06);
-    color: var(--text);
-    padding: 12px;
-    cursor: pointer;
-    font-weight: 750;
-}
-
-.btnPrimary {
-    border: none;
-    color: #0b0b0f;
-    background: linear-gradient(135deg, var(--cta), var(--cta2));
-}
-
-/* Toast */
-#toastRoot {
-    position: fixed;
-    left: 50%;
-    transform: translateX(-50%);
-    bottom: calc(86px + var(--safeBottom));
-    z-index: 60;
-}
-
-.toast {
-    border: 1px solid var(--line);
-    background: rgba(15, 15, 22, 0.92);
-    color: var(--text);
-    border-radius: 999px;
-    padding: 10px 12px;
-    margin-top: 10px;
-    box-shadow: var(--shadow);
-    font-weight: 650;
-}
-
-/* Micro reward pulse */
-.pulseWin {
-    animation: pulseWin 650ms ease-out;
-}
-
-@keyframes pulseWin {
-    0% {
-        transform: scale(1);
-        filter: brightness(1);
-    }
-
-    35% {
-        transform: scale(1.03);
-        filter: brightness(1.12);
-    }
-
-    100% {
-        transform: scale(1);
-        filter: brightness(1);
-    }
-}
-
-/* Optional: a little nicer disabled look */
-button:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-}
-.pill.active {
-    background: rgba(255, 255, 255, 0.22);
-    color: #fff;
-}
-
-/* Volume bar */
-.barWrap {
-    margin-top: 12px;
-    border: 1px solid var(--line);
-    background: rgba(0, 0, 0, 0.18);
-    border-radius: 999px;
-    height: 14px;
-    overflow: hidden;
-}
-
-.barFill {
-    height: 100%;
-    width: 0%;
-    border-radius: 999px;
-    background: linear-gradient(135deg, var(--cta), var(--cta2));
-    transition: width 320ms ease;
-}
-
-.barMeta {
-    margin-top: 8px;
-    display: flex;
-    justify-content: space-between;
-    gap: 10px;
-    color: var(--muted);
-    font-size: 12px;
-}
-
-.pillSelectable {
-    cursor: pointer;
-}
-
-.pillActive {
-    background: rgba(255, 255, 255, 0.22);
-    color: #fff;
-    border-color: rgba(255, 255, 255, 0.22);
-}
-
-.focusPanel {
-    border: 1px solid var(--line);
-    background: rgba(0, 0, 0, 0.18);
-    border-radius: var(--radius);
-    padding: 12px;
-}
-
-/* --- Hard stop horizontal layout blowouts (recommended) --- */
-*,
-*::before,
-*::after {
-    box-sizing: border-box;
-}
-
-/* Prevent any page-level sideways scroll (helps on mobile + devtools) */
-html,
-body {
-    overflow-x: hidden;
-}
-
-
-/* Pills/buttons often cause overflow if they refuse to wrap */
-.pill,
-.btn {
-    max-width: 100%;
-}
-
-/* If any pill text is long, allow wrapping instead of pushing width */
-.pill {
-    white-space: normal;
-    overflow-wrap: anywhere;
-}
 .todayCard {
     border: 1px solid var(--line);
     border-radius: 22px;
@@ -755,6 +670,12 @@ body {
     color: var(--muted);
     font-size: 14px;
     line-height: 1.35;
+}
+
+.todayHint {
+    margin-top: 6px;
+    color: var(--muted);
+    font-size: 12px;
 }
 
 .todayList {
@@ -819,9 +740,37 @@ body {
 .rowLbs {
     font-weight: 800;
     color: var(--accentWarmStart, #f7c04a);
-    /* fallback if you don't have it */
 }
-/* ===== Completed states ===== */
+
+.todayRow.done {
+    opacity: 0.55;
+    filter: saturate(0.8);
+}
+
+.todayRow.done .rowName {
+    text-decoration: line-through;
+    text-decoration-thickness: 2px;
+    text-decoration-color: rgba(255, 255, 255, 0.35);
+}
+
+.todayRow.done .rowLink {
+    opacity: 0.7;
+}
+
+.todayRow.done .rowChevron {
+    font-weight: 900;
+    opacity: 0.95;
+}
+
+.todayCard.allDone {
+    opacity: 0.9;
+    filter: saturate(0.85);
+}
+
+/* =========================
+   COMPLETION STATE HELPERS
+   ========================= */
+
 .exItem {
     display: flex;
     align-items: center;
@@ -867,7 +816,6 @@ body {
     opacity: 0.85;
 }
 
-/* Completed exercise look */
 .pillSelectable.isDone {
     opacity: 0.55;
     filter: saturate(0.75);
@@ -881,7 +829,6 @@ body {
     opacity: 1;
 }
 
-/* Completed split card look */
 .splitCard.isAllDone {
     opacity: 0.85;
     filter: saturate(0.85);
@@ -891,59 +838,11 @@ body {
 .splitCard.isAllDone .big {
     opacity: 0.9;
 }
-/* Exercise row states */
 
-.todayRow.done {
-    opacity: 0.55;
-    filter: saturate(0.8);
-}
+/* =========================
+   HEATMAP
+   ========================= */
 
-.todayRow.done .rowName {
-    text-decoration: line-through;
-    text-decoration-thickness: 2px;
-    text-decoration-color: rgba(255, 255, 255, 0.35);
-}
-
-.todayRow.done .rowLink {
-    opacity: 0.7;
-}
-
-.todayRow.done .rowChevron {
-    font-weight: 900;
-    opacity: 0.95;
-}
-
-/* Whole card when ALL exercises complete */
-.todayCard.allDone {
-    opacity: 0.9;
-    filter: saturate(0.85);
-}
-.todayHint {
-    margin-top: 6px;
-    color: var(--muted);
-    font-size: 12px;
-}
-/* Optional: tiny icon buttons in edit mode */
-.iconBtn.mini {
-    width: 34px;
-    height: 34px;
-    border-radius: 10px;
-    opacity: 0.9;
-}
-
-.iconBtn.miniDanger {
-    width: 34px;
-    height: 34px;
-    border-radius: 10px;
-    opacity: 0.9;
-}
-
-.iconBtn.miniDanger:disabled,
-.iconBtn.mini:disabled {
-    opacity: 0.35;
-}
-
-/* Heatmap helpers */
 .hmCell[data-afterburn="1"] {
     outline: 2px solid rgba(255, 255, 255, 0.5);
     outline-offset: 1px;
@@ -952,41 +851,51 @@ body {
 .hmCell[data-session="1"] {
     box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.25) inset;
 }
-/* Afterburn: keep selected finisher visibly highlighted */
-.btn.active,
-button.btn.active {
-    outline: 2px solid rgba(255, 255, 255, 0.55);
-    outline-offset: 2px;
-    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35) inset;
+
+/* =========================
+   LEGACY VOLUME BAR HELPERS
+   ========================= */
+
+.barWrap {
+    margin-top: 12px;
+    border: 1px solid var(--line);
+    background: rgba(0, 0, 0, 0.18);
+    border-radius: 999px;
+    height: 14px;
+    overflow: hidden;
 }
 
-/* Optional: make it feel "pressed" */
-.btn.active:active,
-button.btn.active:active {
-    transform: translateY(1px);
+.barFill {
+    height: 100%;
+    width: 0%;
+    border-radius: 999px;
+    background: linear-gradient(135deg, var(--cta), var(--cta2));
+    transition: width 320ms ease;
 }
 
-/* ===== Apple polish: Weekly Volume card ===== */
+.barMeta {
+    margin-top: 8px;
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+/* =========================
+   WEEKLY VOLUME CARD - PLAIN
+   ========================= */
 
 .ipGlass {
     position: relative;
     border: 1px solid rgba(255, 255, 255, 0.10);
     background: rgba(255, 255, 255, 0.04);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
     box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
     overflow: hidden;
 }
 
 .ipGlass::before {
-    content: "";
-    position: absolute;
-    inset: -60px -80px auto auto;
-    width: 220px;
-    height: 220px;
-    border-radius: 999px;
-    background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0.00) 60%);
-    pointer-events: none;
+    content: none;
 }
 
 .ipTopRow {
@@ -1027,7 +936,6 @@ button.btn.active:active {
     height: 100%;
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.70);
-    transform: translateZ(0);
 }
 
 .ipBarFill.ipAnimate {
@@ -1035,33 +943,7 @@ button.btn.active:active {
 }
 
 .ipBarShine {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(90deg,
-            rgba(255, 255, 255, 0.00) 0%,
-            rgba(255, 255, 255, 0.08) 35%,
-            rgba(255, 255, 255, 0.00) 70%);
-    transform: translateX(-40%);
-    animation: ipShine 2.8s ease-in-out infinite;
-    pointer-events: none;
-    mix-blend-mode: screen;
-}
-
-@keyframes ipShine {
-    0% {
-        transform: translateX(-60%);
-        opacity: .25;
-    }
-
-    50% {
-        transform: translateX(20%);
-        opacity: .45;
-    }
-
-    100% {
-        transform: translateX(60%);
-        opacity: .25;
-    }
+    display: none;
 }
 
 .ipMeta {
@@ -1109,7 +991,10 @@ button.btn.active:active {
     height: auto;
     object-fit: contain;
     display: block;
+    filter: none;
+    transform: none;
     backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
 }
 
 .ipVehEmoji {
@@ -1122,11 +1007,14 @@ button.btn.active:active {
 
 .ipVeh.isCurrent {
     opacity: 0.72;
+    transform: none;
+    filter: none;
 }
 
 .ipVeh.isNext {
     opacity: 1;
-    filter: drop-shadow(0 14px 22px rgba(0, 0, 0, 0.35));
+    transform: none;
+    filter: none;
 }
 
 .ipVehLabel {
@@ -1155,23 +1043,12 @@ button.btn.active:active {
     opacity: 0.9;
 }
 
-/* Mobile stability fix for Weekly Volume card */
+/* =========================
+   MOBILE SAFETY
+   ========================= */
+
 @media (pointer: coarse),
 (max-width: 768px) {
-    .ipGlass {
-        backdrop-filter: none !important;
-        -webkit-backdrop-filter: none !important;
-    }
-    
-
-    .ipBarShine {
-        animation: none !important;
-    }
-
-    .ipVeh.isNext {
-        filter: none !important;
-    }
-
     .ipVehImg {
         display: block;
         transform: translateZ(0);

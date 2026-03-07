@@ -2,7 +2,7 @@
 import { getWeekId } from "../../state/time.js";
 import { monthKey } from "../../state/month.js";
 import { selectCurrentWeekGauge } from "../../state/selectors.js";
-import { getVehicleProgress} from "../vehicles/vehicleProgress.js";
+import { getVehicleProgress, getVehicleImgSrc } from "../vehicles/vehicleProgress.js";
 
 
 
@@ -45,51 +45,23 @@ function titleCase(str = "") {
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-function vehicleEmoji(vehicleId = "") {
-  const map = {
-    start: "🏁",
-    dirtbike: "🏍️",
-    sedan: "🚗",
-    pickup: "🛻",
-    suv: "🚙",
-    bus: "🚌",
-    firetruck: "🚒",
-    cargotruck: "🚚",
-    helicopter: "🚁",
-    privatejet: "🛩️",
-    interstellar: "🚀",
-  };
 
-  return map[String(vehicleId || "").toLowerCase()] || "🏁";
-}
-
-function vehicleLabel(vehicleId = "") {
-  const map = {
-    start: "Start",
-    dirtbike: "Dirt Bike",
-    sedan: "Sedan",
-    pickup: "Pickup Truck",
-    suv: "SUV",
-    bus: "City Bus",
-    firetruck: "Fire Truck",
-    cargotruck: "Cargo Truck",
-    helicopter: "Helicopter",
-    privatejet: "Private Jet",
-    interstellar: "Interstellar",
-  };
-
-  return map[String(vehicleId || "").toLowerCase()] || titleCase(vehicleId);
-}
 
 function vehicleChipHtml(vehicleId, kind = "current") {
   const isNext = kind === "next";
-  const emoji = vehicleEmoji(vehicleId);
-  const label = vehicleLabel(vehicleId);
+  const src = getVehicleImgSrc(vehicleId);
+  const fallback = getVehicleImgSrc("sedan");
 
   return `
     <div class="ipVeh ${isNext ? "isNext" : "isCurrent"}">
-      <div class="ipVehEmoji">${emoji}</div>
-      <div class="ipVehLabel">${label}</div>
+      <img
+        class="ipVehImg"
+        src="${src}"
+        alt="${vehicleId}"
+        data-fallback="${fallback}"
+        onerror="const fb=this.dataset.fallback; if(fb && this.src!==fb) this.src=fb;"
+      />
+      <div class="ipVehLabel">${titleCase(vehicleId)}</div>
     </div>
   `;
 }
@@ -123,7 +95,7 @@ export function renderWeeklyVolume(el, state, view = null) {
 
 
 
-
+  
   if (activeView === "week") {
     const gauge = selectCurrentWeekGauge(state);
     currentVol = gauge.volume || 0;
