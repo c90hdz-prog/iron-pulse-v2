@@ -64,6 +64,7 @@ html,
 body {
     height: 100%;
     overflow-x: hidden;
+    background: #0b0b0f;
 }
 
 body {
@@ -101,7 +102,10 @@ body.noScroll {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 14px;
+    padding-top: calc(14px + env(safe-area-inset-top));
+    padding-left: 16px;
+    padding-right: 16px;
+    padding-bottom: 14px;
     border-bottom: 1px solid var(--line);
     backdrop-filter: blur(14px);
     background: linear-gradient(180deg, var(--headerTop), var(--headerBottom));
@@ -169,6 +173,7 @@ body.noScroll {
     border-top: 1px solid var(--line);
     backdrop-filter: blur(14px);
     background: rgba(11, 11, 15, 0.75);
+    padding-bottom: calc(12px + env(safe-area-inset-bottom));
 }
 
 .cta {
@@ -1157,6 +1162,7 @@ input {
     width: 300px;
     max-width: 90%;
     height: auto;
+    object-fit: contain;
     filter:
         drop-shadow(0 10px 22px rgba(0, 0, 0, 0.45)) 
         drop-shadow(0 0 18px rgba(53, 182, 255, 0.10));
