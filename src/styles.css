@@ -168,12 +168,29 @@ body.noScroll {
 .footer {
     position: sticky;
     bottom: 0;
-    z-index: 20;
-    padding: 12px 14px calc(12px + var(--safeBottom));
-    border-top: 1px solid var(--line);
-    backdrop-filter: blur(14px);
-    background: rgba(11, 11, 15, 0.75);
-    padding-bottom: calc(12px + env(safe-area-inset-bottom));
+
+    padding: 12px 16px;
+    padding-bottom: calc(env(safe-area-inset-bottom) + 12px);
+
+    background: linear-gradient(to top,
+            rgba(11, 11, 15, 0.95),
+            rgba(11, 11, 15, 0.6),
+            transparent);
+
+    backdrop-filter: blur(12px);
+}
+
+.footer::before {
+    content: "";
+    position: absolute;
+    top: -40px;
+    left: 0;
+    right: 0;
+    height: 40px;
+
+    background: linear-gradient(to top,
+            rgba(11, 11, 15, 0.6),
+            transparent);
 }
 
 .cta {
