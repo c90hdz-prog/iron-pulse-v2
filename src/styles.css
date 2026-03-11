@@ -484,6 +484,67 @@ input {
 }
 
 /* =========================
+   EXERCISE PICKER MODAL
+   ========================= */
+
+.modalPicker {
+    max-height: 85vh;
+}
+
+.pickerSub {
+    margin-top: 4px;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.3;
+}
+
+.pickerSearchWrap {
+    padding: 14px 16px 10px;
+    border-bottom: 1px solid var(--line);
+    background: rgba(18, 18, 22, 0.96);
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+
+.pickerList {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 12px 16px 120px;
+    display: grid;
+    gap: 10px;
+    -webkit-overflow-scrolling: touch;
+}
+
+.pickerItem {
+    width: 100%;
+    text-align: left;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text);
+    padding: 12px 14px;
+    cursor: pointer;
+}
+
+.pickerItem:active {
+    transform: scale(0.99);
+}
+
+.pickerItemName {
+    font-weight: 800;
+    line-height: 1.2;
+}
+
+.pickerItemHelp {
+    color: var(--muted);
+    font-size: 12px;
+    margin-top: 4px;
+    line-height: 1.3;
+}
+
+/* =========================
    TOAST
    ========================= */
 

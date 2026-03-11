@@ -555,11 +555,14 @@ function bindExercisePickerModal(payload) {
   const search = overlay.querySelector("#pickerSearch");
   const list = overlay.querySelector("#pickerList");
 
+  const normalize = (s) => String(s || "").trim().toLowerCase();
+
   const filterList = () => {
-    const q = String(search?.value || "").trim().toLowerCase();
+    const q = normalize(search?.value);
     if (!list) return;
+
     list.querySelectorAll("[data-pick-exid]").forEach((btn) => {
-      const text = btn.textContent.toLowerCase();
+      const text = normalize(btn.textContent);
       btn.style.display = !q || text.includes(q) ? "" : "none";
     });
   };
@@ -574,29 +577,68 @@ function bindExercisePickerModal(payload) {
       const todayId = payload.dayId || dayKey(new Date());
 
       if (payload.mode === "swap") {
-        store.dispatch(setExerciseSwap({
-          dayId: todayId,
-          splitName: payload.splitName,
-          slot: payload.slot,            // 1-based
-          exerciseId: picked,
-          fromExerciseId: payload.fromExerciseId, // reducer hard-guard uses this
-        }));
+        store.dispatch(
+          setExerciseSwap({
+            dayId: todayId,
+            splitName: payload.splitName,
+            slot: payload.slot, // 1-based
+            exerciseId: picked,
+            fromExerciseId: payload.fromExerciseId,
+          })
+        );
+
         toast("Swapped ✅");
         haptic("light");
-      } else if (payload.mode === "add") {
+        store.dispatch(closeModal());
+        return;
+      }
+
+      if (payload.mode === "add") {
+        const st = store.getState();
+
+        // Existing extras for today
+        const extraIds = Array.isArray(st?.program?.extraExercisesByDay?.[todayId])
+          ? st.program.extraExercisesByDay[todayId]
+          : [];
+
+        // Final rendered exercises currently visible on today's split
+        const renderedIds = Array.from(
+          els.todaysSplit?.querySelectorAll("[data-exid]") || []
+        )
+          .map((el) => el.getAttribute("data-exid"))
+          .filter(Boolean);
+
+        const alreadyExists =
+          extraIds.includes(picked) || renderedIds.includes(picked);
+
+        if (alreadyExists) {
+          toast("Already in today’s workout");
+          haptic("light");
+          return;
+        }
+
         store.dispatch(addExtraExercise({ dayId: todayId, exerciseId: picked }));
         toast("Added ✅");
         haptic("light");
+        store.dispatch(closeModal());
       }
-
-      store.dispatch(closeModal());
     });
   });
 
-  // Autofocus
-  search?.focus?.();
-}
+  // Autofocus with a tiny delay so mobile keyboards behave better
+  if (search) {
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        search.focus({ preventScroll: true });
 
+        // Make sure the search field is visible after keyboard opens
+        setTimeout(() => {
+          search.scrollIntoView({ block: "center", behavior: "smooth" });
+        }, 120);
+      }, 40);
+    });
+  }
+}
 // -------------------------
 // Existing binders (unchanged below)
 // -------------------------

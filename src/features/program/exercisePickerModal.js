@@ -9,15 +9,18 @@ export const MODAL_EXERCISE_PICKER = "EXERCISE_PICKER";
  *   mode: "swap" | "add",
  *   dayId: "YYYY-MM-DD",
  *   splitName: string,
- *   slot?: number (1-based)         // for swap
- *   fromExerciseId?: string         // for swap lock checking
+ *   slot?: number (1-based),        // for swap
+ *   fromExerciseId?: string,        // for swap lock checking
  *   title?: string
  * }
  */
 export function exercisePickerHtml(payload = {}) {
-  const title = payload.title || (payload.mode === "add" ? "Add Exercise" : "Swap Exercise");
+  const isAdd = payload.mode === "add";
+  const title = payload.title || (isAdd ? "Add Exercise" : "Swap Exercise");
+  const sub = isAdd
+    ? "Add one more movement to today’s workout."
+    : "Choose a replacement for this slot.";
 
-  // catalog list
   const items = Object.values(EXERCISE_CATALOG || {})
     .filter(Boolean)
     .map((e) => ({
@@ -28,38 +31,53 @@ export function exercisePickerHtml(payload = {}) {
     .sort((a, b) => a.name.localeCompare(b.name));
 
   return `
-    <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal modalPicker" role="dialog" aria-modal="true">
       <div class="modalHeader">
-        <div class="modalTitle">${title}</div>
-        <button class="iconBtn" data-close>✕</button>
+        <div>
+          <div class="modalTitle">${title}</div>
+          <div class="pickerSub">${sub}</div>
+        </div>
+        <button class="iconBtn" data-close aria-label="Close">✕</button>
       </div>
 
-      <div class="modalBody">
+      <div class="pickerSearchWrap">
         <div class="field">
-          <label>Search</label>
-          <input id="pickerSearch" placeholder="Type: row, squat, curl..." />
+          <label for="pickerSearch">Search</label>
+          <input
+            id="pickerSearch"
+            type="text"
+            inputmode="search"
+            autocomplete="off"
+            autocapitalize="none"
+            spellcheck="false"
+            placeholder="Type: row, squat, curl..."
+          />
         </div>
+      </div>
 
-        <div style="margin-top:10px; display:grid; gap:8px;" id="pickerList">
-          ${items
-            .map(
-              (e) => `
-                <button class="pill pillSelectable" data-pick-exid="${e.id}" style="text-align:left;">
-                  <div style="font-weight:800;">${e.name}</div>
-                  ${
-                    e.helper
-                      ? `<div style="color:var(--muted); font-size:12px; margin-top:2px;">${e.helper}</div>`
-                      : ""
-                  }
-                </button>
-              `
-            )
-            .join("")}
-        </div>
+      <div class="pickerList" id="pickerList">
+        ${items
+          .map(
+            (e) => `
+              <button
+                class="pickerItem"
+                data-pick-exid="${e.id}"
+                type="button"
+              >
+                <div class="pickerItemName">${e.name}</div>
+                ${
+                  e.helper
+                    ? `<div class="pickerItemHelp">${e.helper}</div>`
+                    : ""
+                }
+              </button>
+            `
+          )
+          .join("")}
       </div>
 
       <div class="modalActions">
-        <button class="btn" data-close>Cancel</button>
+        <button class="btn" data-close type="button">Cancel</button>
       </div>
     </div>
   `;
